@@ -25,6 +25,8 @@ import { ChessMatchmakingScreen } from './src/chess/screens/ChessMatchmakingScre
 import { ChessPlayScreen } from './src/chess/screens/ChessPlayScreen';
 import { ChessMMRService } from './src/chess/services/chessMMRService';
 import { ChessBotProfile, GameThemeId, PlayerChessProfile } from './src/chess/types';
+import { CampaignWorldMapScreen } from './src/chess/screens/CampaignWorldMapScreen';
+import { CampaignStage } from './src/chess/campaign/types';
 
 type CurrentScreen =
   | 'lobby'
@@ -36,7 +38,8 @@ type CurrentScreen =
   | 'battlepass'
   | 'chess_hub'
   | 'chess_matchmaking'
-  | 'chess_play';
+  | 'chess_play'
+  | 'campaign_map';
 
 export default function App() {
   const [profile, setProfile] = useState<PlayerProfile | null>(null);
@@ -44,6 +47,7 @@ export default function App() {
   const [chessProfile, setChessProfile] = useState<PlayerChessProfile | null>(null);
   const [activeChessTheme, setActiveChessTheme] = useState<GameThemeId>('ninjas');
   const [activeChessBot, setActiveChessBot] = useState<ChessBotProfile | null>(null);
+  const [activeCampaignStage, setActiveCampaignStage] = useState<CampaignStage | null>(null);
   const [isChessPassAndPlay, setIsChessPassAndPlay] = useState(false);
   const [screen, setScreen] = useState<CurrentScreen>('lobby');
   const [activeOpponent, setActiveOpponent] = useState<OpponentMatchCandidate | null>(null);
@@ -344,7 +348,21 @@ export default function App() {
           onStartRankedMatch={handleStartChessRanked}
           onStartPracticeMatch={handleStartChessPractice}
           onStartPassAndPlay={handleStartChessPassAndPlay}
+          onOpenCampaign={() => setScreen('campaign_map')}
           onBackToMainMenu={() => setScreen('lobby')}
+        />
+      )}
+
+      {screen === 'campaign_map' && (
+        <CampaignWorldMapScreen
+          onStartStageBattle={(stage, worldId) => {
+            setActiveCampaignStage(stage);
+            setActiveChessTheme(worldId);
+            setActiveChessBot(stage.opponent);
+            setIsChessPassAndPlay(false);
+            setScreen('chess_play');
+          }}
+          onBack={() => setScreen('chess_hub')}
         />
       )}
 
@@ -353,6 +371,7 @@ export default function App() {
           themeId={activeChessTheme}
           profile={chessProfile}
           onOpponentFound={(opp) => {
+            setActiveCampaignStage(null);
             setActiveChessBot(opp);
             setIsChessPassAndPlay(false);
             setScreen('chess_play');
@@ -366,14 +385,25 @@ export default function App() {
           themeId={activeChessTheme}
           opponent={activeChessBot}
           isPassAndPlay={isChessPassAndPlay}
+          campaignStage={activeCampaignStage || undefined}
           onGameEnd={async () => {
             await handleRefreshChessProfile();
-            setScreen('chess_hub');
+            if (activeCampaignStage) {
+              setScreen('campaign_map');
+              setActiveCampaignStage(null);
+            } else {
+              setScreen('chess_hub');
+            }
             setActiveChessBot(null);
           }}
           onExit={async () => {
             await handleRefreshChessProfile();
-            setScreen('chess_hub');
+            if (activeCampaignStage) {
+              setScreen('campaign_map');
+              setActiveCampaignStage(null);
+            } else {
+              setScreen('chess_hub');
+            }
             setActiveChessBot(null);
           }}
         />

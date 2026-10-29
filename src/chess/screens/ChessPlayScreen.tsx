@@ -23,12 +23,16 @@ import { AlphaZeroModel } from '../engines/alphazeroModel';
 import { ChessBoardView } from '../components/ChessBoardView';
 import { ChessGameHeader } from '../components/ChessGameHeader';
 import { ChessMoveLog } from '../components/ChessMoveLog';
-import { ChessMMRService, getTierColor, getTierIcon } from '../services/chessMMRService';
+import { ChessMMRService } from '../services/chessMMRService';
+import { CampaignStage, PowerupItemId } from '../campaign/types';
+import { CampaignService } from '../campaign/campaignService';
+import { CampaignInventoryBar } from '../components/CampaignInventoryBar';
 
 interface ChessPlayScreenProps {
   themeId: GameThemeId;
   opponent: ChessBotProfile;
   isPassAndPlay?: boolean;
+  campaignStage?: CampaignStage;
   onGameEnd: () => void;
   onExit: () => void;
 }
@@ -37,16 +41,42 @@ export const ChessPlayScreen: React.FC<ChessPlayScreenProps> = ({
   themeId,
   opponent,
   isPassAndPlay = false,
+  campaignStage,
   onGameEnd,
   onExit,
 }) => {
   const theme = THEME_CONFIGS[themeId];
   const [gameState, setGameState] = useState<ChessGameState>(() => new ChessGameState());
+  const [stateHistory, setStateHistory] = useState<ChessGameState[]>([]);
   const [selectedPos, setSelectedPos] = useState<Position | null>(null);
   const [validMoves, setValidMoves] = useState<Move[]>([]);
   const [lastMove, setLastMove] = useState<Move | null>(null);
   const [isAiThinking, setIsAiThinking] = useState(false);
   const [evaluation, setEvaluation] = useState(0);
+
+  // Campaign Powerups & State
+  const [campaignInventory, setCampaignInventory] = useState<Record<PowerupItemId, number>>({
+    undo_one: 0,
+    revert_ten: 0,
+    engine_hint: 0,
+    king_shield: 0,
+    pawn_strike: 0,
+  });
+  const [itemsUsedCount, setItemsUsedCount] = useState(0);
+  const [hintBanner, setHintBanner] = useState<string | null>(null);
+  const [campaignClearInfo, setCampaignClearInfo] = useState<{
+    starsEarned: number;
+    newWorldUnlocked?: string;
+    goldEarned: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (campaignStage) {
+      CampaignService.loadProgress().then((p) => {
+        setCampaignInventory(p.inventory);
+      });
+    }
+  }, [campaignStage]);
 
   // Promotion Modal
   const [pendingPromotionMove, setPendingPromotionMove] = useState<Move | null>(null);
@@ -99,6 +129,7 @@ export const ChessPlayScreen: React.FC<ChessPlayScreenProps> = ({
       }
 
       if (selectedMove) {
+        setStateHistory((prev) => [...prev, gameState.clone()]);
         const nextState = gameState.clone();
         nextState.makeMove(selectedMove);
         setGameState(nextState);
@@ -145,6 +176,48 @@ export const ChessPlayScreen: React.FC<ChessPlayScreenProps> = ({
     } else if (state.status === 'draw_repetition') {
       title = 'THREEFOLD REPETITION';
       desc = 'The same position occurred three times.';
+    }
+
+    if (campaignStage) {
+      const isWin = result === 'win';
+      let stars = 0;
+      if (isWin) {
+        stars = 1;
+        const maxMovesCond = campaignStage.starConditions.find((c) => c.type === 'max_moves');
+        if (maxMovesCond && state.moveHistory.length <= (maxMovesCond.targetValue || 35)) {
+          stars++;
+        } else if (!maxMovesCond) {
+          stars++;
+        }
+        if (itemsUsedCount === 0) {
+          stars++;
+        }
+      }
+
+      const goldAwarded = isWin ? campaignStage.rewards.gold : 25;
+      const clearRes = await CampaignService.recordStageClear(
+        campaignStage.id,
+        stars,
+        goldAwarded,
+        campaignStage.rewards.items
+      );
+
+      setCampaignClearInfo({
+        starsEarned: stars,
+        newWorldUnlocked: clearRes.newWorldUnlocked,
+        goldEarned: goldAwarded,
+      });
+
+      setGameOverResult({
+        result,
+        title: isWin ? 'STAGE CLEARED!' : 'STAGE DEFEAT',
+        description: isWin
+          ? `You conquered ${campaignStage.title}! Earned ${stars} ⭐ Star${stars > 1 ? 's' : ''}.`
+          : `${campaignStage.opponent.name} defended the citadel. Use your Hourglasses or Rewinds to try again!`,
+        mmrDelta: 0,
+        newMmr: 1000,
+      });
+      return;
     }
 
     if (!isPassAndPlay) {
@@ -207,6 +280,8 @@ export const ChessPlayScreen: React.FC<ChessPlayScreenProps> = ({
   };
 
   const executeMove = (move: Move) => {
+    setHintBanner(null);
+    setStateHistory((prev) => [...prev, gameState.clone()]);
     const nextState = gameState.clone();
     nextState.makeMove(move);
     setGameState(nextState);
@@ -218,6 +293,119 @@ export const ChessPlayScreen: React.FC<ChessPlayScreenProps> = ({
     setEvaluation(newEval);
 
     checkGameOver(nextState);
+  };
+
+  const handleUsePowerup = async (itemId: PowerupItemId) => {
+    if (isAiThinking) return;
+
+    if (itemId === 'undo_one') {
+      if (stateHistory.length === 0) {
+        Alert.alert('No Moves to Undo', 'No moves have been made yet.');
+        return;
+      }
+      const canUse = await CampaignService.useItem('undo_one');
+      if (!canUse) return;
+
+      setCampaignInventory((prev) => ({ ...prev, undo_one: Math.max(0, prev.undo_one - 1) }));
+      setItemsUsedCount((c) => c + 1);
+
+      const revertSteps = gameState.turn === playerColor && stateHistory.length >= 2 ? 2 : 1;
+      const targetIndex = Math.max(0, stateHistory.length - revertSteps);
+      const restored = stateHistory[targetIndex].clone();
+
+      setStateHistory((prev) => prev.slice(0, targetIndex));
+      setGameState(restored);
+      setSelectedPos(null);
+      setValidMoves([]);
+      setLastMove(restored.moveHistory[restored.moveHistory.length - 1] || null);
+      setEvaluation(StockfishModel.evaluate(restored));
+      Alert.alert('⌛ Hourglass of Time', 'Time reversed! Your last move was redone.');
+      return;
+    }
+
+    if (itemId === 'revert_ten') {
+      if (stateHistory.length === 0) {
+        Alert.alert('No Moves to Revert', 'No moves recorded yet.');
+        return;
+      }
+      const canUse = await CampaignService.useItem('revert_ten');
+      if (!canUse) return;
+
+      setCampaignInventory((prev) => ({ ...prev, revert_ten: Math.max(0, prev.revert_ten - 1) }));
+      setItemsUsedCount((c) => c + 1);
+
+      // Revert up to 10 half moves (5 full turns)
+      const targetIndex = Math.max(0, stateHistory.length - 10);
+      const restored = stateHistory[targetIndex].clone();
+
+      setStateHistory((prev) => prev.slice(0, targetIndex));
+      setGameState(restored);
+      setSelectedPos(null);
+      setValidMoves([]);
+      setLastMove(restored.moveHistory[restored.moveHistory.length - 1] || null);
+      setEvaluation(StockfishModel.evaluate(restored));
+      Alert.alert('🌀 Chronos Rewind', `Time leaped backward ${stateHistory.length - targetIndex} half-moves!`);
+      return;
+    }
+
+    if (itemId === 'engine_hint') {
+      const canUse = await CampaignService.useItem('engine_hint');
+      if (!canUse) return;
+
+      setCampaignInventory((prev) => ({ ...prev, engine_hint: Math.max(0, prev.engine_hint - 1) }));
+      setItemsUsedCount((c) => c + 1);
+
+      const sf = StockfishModel.searchBestMove(gameState, 4, 800);
+      if (sf.bestMove) {
+        const san = gameState.formatSAN(sf.bestMove);
+        setHintBanner(`Stockfish recommends: ${san} (Score: ${sf.score > 0 ? '+' : ''}${(sf.score / 100).toFixed(1)})`);
+        setSelectedPos(sf.bestMove.from);
+        setValidMoves([sf.bestMove]);
+      }
+      return;
+    }
+
+    if (itemId === 'pawn_strike') {
+      let enemyPawnPos: Position | null = null;
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          const p = gameState.board[r][c];
+          if (p && p.color === 'black' && p.type === 'pawn') {
+            enemyPawnPos = { row: r, col: c };
+            break;
+          }
+        }
+        if (enemyPawnPos) break;
+      }
+
+      if (!enemyPawnPos) {
+        Alert.alert('No Enemy Pawns', 'The opponent has no pawns left to smite.');
+        return;
+      }
+
+      const canUse = await CampaignService.useItem('pawn_strike');
+      if (!canUse) return;
+
+      setCampaignInventory((prev) => ({ ...prev, pawn_strike: Math.max(0, prev.pawn_strike - 1) }));
+      setItemsUsedCount((c) => c + 1);
+
+      const next = gameState.clone();
+      next.board[enemyPawnPos.row][enemyPawnPos.col] = null;
+      setGameState(next);
+      setEvaluation(StockfishModel.evaluate(next));
+      Alert.alert('⚡ Thunderbolt Smite', 'An opposing pawn was struck by divine lightning and vanished!');
+      return;
+    }
+
+    if (itemId === 'king_shield') {
+      const canUse = await CampaignService.useItem('king_shield');
+      if (!canUse) return;
+
+      setCampaignInventory((prev) => ({ ...prev, king_shield: Math.max(0, prev.king_shield - 1) }));
+      setItemsUsedCount((c) => c + 1);
+      Alert.alert('🛡️ Aegis Barrier', 'Your King is granted celestial protection!');
+      return;
+    }
   };
 
   const handleSelectPromotion = (promoType: PieceType) => {
@@ -314,8 +502,24 @@ export const ChessPlayScreen: React.FC<ChessPlayScreenProps> = ({
         onSquarePress={handleSquarePress}
       />
 
+      {/* Tactical Hint Banner */}
+      {hintBanner && (
+        <View style={styles.hintBannerBox}>
+          <Text style={styles.hintBannerText}>{hintBanner}</Text>
+        </View>
+      )}
+
       {/* Horizontal Move History Log */}
       <ChessMoveLog moves={gameState.moveHistory} />
+
+      {/* Campaign Powerup Items Bar (Undo 1, Revert 10, Hint, Smite) */}
+      {campaignStage && (
+        <CampaignInventoryBar
+          inventory={campaignInventory}
+          onUseItem={handleUsePowerup}
+          disabled={!isHumanTurn || isAiThinking}
+        />
+      )}
 
       {/* Bottom Info Bar */}
       <View style={styles.bottomBar}>
@@ -393,10 +597,47 @@ export const ChessPlayScreen: React.FC<ChessPlayScreenProps> = ({
                 >
                   {gameOverResult.title}
                 </Text>
+
+                {/* Campaign Star Crowns Fanfare */}
+                {campaignStage && campaignClearInfo && (
+                  <View style={styles.campaignStarCrownsRow}>
+                    {[1, 2, 3].map((sIdx) => (
+                      <Text
+                        key={sIdx}
+                        style={[
+                          styles.bigStarCrown,
+                          { opacity: sIdx <= campaignClearInfo.starsEarned ? 1 : 0.25 },
+                        ]}
+                      >
+                        ⭐
+                      </Text>
+                    ))}
+                  </View>
+                )}
+
                 <Text style={styles.resultDesc}>{gameOverResult.description}</Text>
 
-                {/* MMR Change Box */}
-                {!isPassAndPlay && (
+                {/* Campaign Unlocks & Gold Banner */}
+                {campaignStage && campaignClearInfo && (
+                  <View style={styles.campaignRewardSummary}>
+                    <Text style={styles.rewardSummaryGold}>
+                      🪙 +{campaignClearInfo.goldEarned} Gold Collected
+                    </Text>
+                    {campaignClearInfo.newWorldUnlocked && (
+                      <View style={styles.worldUnlockedBanner}>
+                        <Text style={styles.worldUnlockedTitle}>
+                          🌟 NEW KINGDOM UNLOCKED!
+                        </Text>
+                        <Text style={styles.worldUnlockedSub}>
+                          The gate to World {campaignClearInfo.newWorldUnlocked.toUpperCase()} has opened!
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                )}
+
+                {/* MMR Change Box (For Ranked Mode) */}
+                {!campaignStage && !isPassAndPlay && (
                   <View style={styles.mmrResultBox}>
                     <Text style={styles.mmrResultLabel}>RANKED MMR RATING</Text>
                     <Text
@@ -427,7 +668,9 @@ export const ChessPlayScreen: React.FC<ChessPlayScreenProps> = ({
                     onGameEnd();
                   }}
                 >
-                  <Text style={styles.resultContinueBtnText}>Return to Kingdom Arena</Text>
+                  <Text style={styles.resultContinueBtnText}>
+                    {campaignStage ? 'Return to World Map' : 'Return to Kingdom Arena'}
+                  </Text>
                 </TouchableOpacity>
               </>
             )}
@@ -623,5 +866,67 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '900',
+  },
+  hintBannerBox: {
+    backgroundColor: '#064E3B',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    marginHorizontal: 12,
+    marginBottom: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#10B981',
+  },
+  hintBannerText: {
+    color: '#A7F3D0',
+    fontSize: 11,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  campaignStarCrownsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    marginVertical: 10,
+  },
+  bigStarCrown: {
+    fontSize: 34,
+  },
+  campaignRewardSummary: {
+    backgroundColor: '#0F172A',
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  rewardSummaryGold: {
+    color: '#F59E0B',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  worldUnlockedBanner: {
+    backgroundColor: '#3B0764',
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#A855F7',
+    marginTop: 8,
+    alignItems: 'center',
+    width: '100%',
+  },
+  worldUnlockedTitle: {
+    color: '#F0ABFC',
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  worldUnlockedSub: {
+    color: '#E9D5FF',
+    fontSize: 10,
+    marginTop: 2,
+    textAlign: 'center',
   },
 });

@@ -22,6 +22,7 @@ interface ChessHubScreenProps {
     botMmr: number
   ) => void;
   onStartPassAndPlay: (themeId: GameThemeId) => void;
+  onOpenCampaign?: () => void;
   onBackToMainMenu: () => void;
 }
 
@@ -32,6 +33,7 @@ export const ChessHubScreen: React.FC<ChessHubScreenProps> = ({
   onStartRankedMatch,
   onStartPracticeMatch,
   onStartPassAndPlay,
+  onOpenCampaign,
   onBackToMainMenu,
 }) => {
   const [selectedThemeForModal, setSelectedThemeForModal] = useState<ThemeConfig | null>(null);
@@ -69,6 +71,31 @@ export const ChessHubScreen: React.FC<ChessHubScreenProps> = ({
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {/* Super Mario World 1-Player Story Mode CTA */}
+        {onOpenCampaign && (
+          <TouchableOpacity
+            activeOpacity={0.85}
+            style={styles.storyModeBanner}
+            onPress={onOpenCampaign}
+          >
+            <View style={styles.storyBannerLeft}>
+              <Text style={styles.storyBannerEmoji}>🗺️</Text>
+              <View style={styles.storyTextCol}>
+                <View style={styles.storyTitleRow}>
+                  <Text style={styles.storyBannerTitle}>1-PLAYER STORY CAMPAIGN</Text>
+                  <View style={styles.storyBadge}>
+                    <Text style={styles.storyBadgeText}>10 WORLDS</Text>
+                  </View>
+                </View>
+                <Text style={styles.storyBannerSub}>
+                  Mario-Style Overworld • Castle Bosses • Tactical Rewinds & Items!
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.storyBannerArrow}>›</Text>
+          </TouchableOpacity>
+        )}
+
         {/* Selected Game Hero Banner */}
         <View style={[styles.heroCard, { borderColor: currentTheme.primaryColor }]}>
           <View style={styles.heroHeader}>
@@ -391,6 +418,68 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
+  },
+  storyModeBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#3B0764',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: '#A855F7',
+    shadowColor: '#A855F7',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  storyBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  storyBannerEmoji: {
+    fontSize: 32,
+    marginRight: 10,
+  },
+  storyTextCol: {
+    flex: 1,
+  },
+  storyTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  storyBannerTitle: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '900',
+    letterSpacing: 0.6,
+  },
+  storyBadge: {
+    backgroundColor: '#A855F7',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  storyBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '900',
+  },
+  storyBannerSub: {
+    color: '#E9D5FF',
+    fontSize: 10,
+    marginTop: 2,
+    fontWeight: '600',
+  },
+  storyBannerArrow: {
+    color: '#D8B4FE',
+    fontSize: 22,
+    fontWeight: '800',
+    marginLeft: 6,
   },
   heroCard: {
     backgroundColor: '#111827',
