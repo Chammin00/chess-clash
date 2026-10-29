@@ -1,15 +1,18 @@
 {
   "expo": {
-    "name": "app-temp",
-    "slug": "app-temp",
+    "name": "Chess Clash: 10 Kingdoms",
+    "slug": "chess-clash-10-kingdoms",
+    "description": "Tactical 10-Kingdom Chess with MMR matchmaking, custom piece abilities, and top replicated engines (Stockfish, Maia, AlphaZero).",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.duelarena.game"
     },
     "android": {
+      "package": "com.duelarena.game",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
