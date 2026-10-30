@@ -49,7 +49,7 @@ export default function App() {
   const [activeChessBot, setActiveChessBot] = useState<ChessBotProfile | null>(null);
   const [activeCampaignStage, setActiveCampaignStage] = useState<CampaignStage | null>(null);
   const [isChessPassAndPlay, setIsChessPassAndPlay] = useState(false);
-  const [screen, setScreen] = useState<CurrentScreen>('lobby');
+  const [screen, setScreen] = useState<CurrentScreen>('chess_hub');
   const [activeOpponent, setActiveOpponent] = useState<OpponentMatchCandidate | null>(null);
   const [matchResult, setMatchResult] = useState<MatchResultData | null>(null);
   const [showResultModal, setShowResultModal] = useState(false);
