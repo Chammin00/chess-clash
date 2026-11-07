@@ -23,6 +23,7 @@ import { AlphaZeroModel } from '../engines/alphazeroModel';
 import { ChessBoardView } from '../components/ChessBoardView';
 import { ChessGameHeader } from '../components/ChessGameHeader';
 import { ChessMoveLog } from '../components/ChessMoveLog';
+import { VectorPiece } from '../components/VectorPiece';
 import { ChessMMRService } from '../services/chessMMRService';
 import { CampaignStage, PowerupItemId } from '../campaign/types';
 import { CampaignService } from '../campaign/campaignService';
@@ -46,7 +47,7 @@ export const ChessPlayScreen: React.FC<ChessPlayScreenProps> = ({
   onExit,
 }) => {
   const theme = THEME_CONFIGS[themeId];
-  const [gameState, setGameState] = useState<ChessGameState>(() => new ChessGameState());
+  const [gameState, setGameState] = useState<ChessGameState>(() => new ChessGameState(themeId));
   const [stateHistory, setStateHistory] = useState<ChessGameState[]>([]);
   const [selectedPos, setSelectedPos] = useState<Position | null>(null);
   const [validMoves, setValidMoves] = useState<Move[]>([]);
@@ -561,7 +562,9 @@ export const ChessPlayScreen: React.FC<ChessPlayScreenProps> = ({
                     style={styles.promoOptionBtn}
                     onPress={() => handleSelectPromotion(pType)}
                   >
-                    <Text style={styles.promoOptionEmoji}>{lore.icon}</Text>
+                    <View style={{ marginBottom: 6 }}>
+                      <VectorPiece type={pType} color={playerColor} size={36} />
+                    </View>
                     <Text style={styles.promoOptionTitle}>{lore.title}</Text>
                     <Text style={styles.promoOptionType}>{pType.toUpperCase()}</Text>
                   </TouchableOpacity>

@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 import { ChessPiece, PlayerColor, ThemeConfig } from '../types';
 import { getTierColor, getTierIcon } from '../services/chessMMRService';
+import { VectorPiece } from './VectorPiece';
 
 interface ChessGameHeaderProps {
   theme: ThemeConfig;
@@ -73,9 +74,9 @@ export const ChessGameHeader: React.FC<ChessGameHeaderProps> = ({
             {/* Captured Pieces by Opponent */}
             <View style={styles.capturedRack}>
               {capturedWhite.slice(-6).map((p, idx) => (
-                <Text key={`cap_w_${idx}`} style={styles.capturedPieceEmoji}>
-                  {theme.pieces[p.type].icon}
-                </Text>
+                <View key={`cap_w_${idx}`} style={{ marginRight: 2 }}>
+                  <VectorPiece type={p.type} color={p.color} size={16} />
+                </View>
               ))}
               {materialAdvantage < 0 && (
                 <Text style={styles.advText}>+{-materialAdvantage}</Text>
@@ -126,9 +127,9 @@ export const ChessGameHeader: React.FC<ChessGameHeaderProps> = ({
             {/* Captured Pieces by Player */}
             <View style={styles.capturedRack}>
               {capturedBlack.slice(-6).map((p, idx) => (
-                <Text key={`cap_b_${idx}`} style={styles.capturedPieceEmoji}>
-                  {theme.pieces[p.type].icon}
-                </Text>
+                <View key={`cap_b_${idx}`} style={{ marginRight: 2 }}>
+                  <VectorPiece type={p.type} color={p.color} size={16} />
+                </View>
               ))}
               {materialAdvantage > 0 && (
                 <Text style={styles.advText}>+{materialAdvantage}</Text>

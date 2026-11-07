@@ -1,4 +1,4 @@
-import { ChessPiece, Move, PieceType, PlayerColor, Position, GameStatus } from './types';
+import { ChessPiece, Move, PieceType, PlayerColor, Position, GameStatus, GameThemeId } from './types';
 
 export class ChessGameState {
   board: (ChessPiece | null)[][];
@@ -15,8 +15,9 @@ export class ChessGameState {
   moveHistory: Move[];
   positionHistory: string[];
   status: GameStatus;
+  themeId?: GameThemeId;
 
-  constructor() {
+  constructor(themeId?: GameThemeId) {
     this.board = this.createInitialBoard();
     this.turn = 'white';
     this.castlingRights = {
@@ -31,6 +32,7 @@ export class ChessGameState {
     this.moveHistory = [];
     this.positionHistory = [];
     this.status = 'ongoing';
+    this.themeId = themeId;
     this.recordPosition();
   }
 
@@ -69,6 +71,7 @@ export class ChessGameState {
     next.moveHistory = [...this.moveHistory];
     next.positionHistory = [...this.positionHistory];
     next.status = this.status;
+    next.themeId = this.themeId;
     return next;
   }
 
@@ -134,6 +137,10 @@ export class ChessGameState {
       let r = pos.row + dr;
       let c = pos.col + dc;
       while (r >= 0 && r < 8 && c >= 0 && c < 8) {
+        // Cyber Mecha Faction Modifier: Aegis Forcefield blocks sniping checks across >4 tiles
+        if (this.themeId === 'cyber_mecha' && Math.max(Math.abs(r - pos.row), Math.abs(c - pos.col)) > 4) {
+          break;
+        }
         const p = this.board[r][c];
         if (p) {
           if (p.color === attackerColor && (p.type === 'rook' || p.type === 'queen')) {
@@ -152,6 +159,10 @@ export class ChessGameState {
       let r = pos.row + dr;
       let c = pos.col + dc;
       while (r >= 0 && r < 8 && c >= 0 && c < 8) {
+        // Cyber Mecha Faction Modifier: Aegis Forcefield blocks sniping checks across >4 tiles
+        if (this.themeId === 'cyber_mecha' && Math.max(Math.abs(r - pos.row), Math.abs(c - pos.col)) > 4) {
+          break;
+        }
         const p = this.board[r][c];
         if (p) {
           if (p.color === attackerColor && (p.type === 'bishop' || p.type === 'queen')) {
@@ -323,6 +334,29 @@ export class ChessGameState {
           }
         }
 
+        // Ninjas Asymmetric Modifier: Smoke Clone Swap with adjacent friendly piece
+        if (this.themeId === 'ninjas') {
+          for (let dr = -1; dr <= 1; dr++) {
+            for (let dc = -1; dc <= 1; dc++) {
+              if (dr === 0 && dc === 0) continue;
+              const nr = row + dr;
+              const nc = col + dc;
+              if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+                const friendly = this.board[nr][nc];
+                if (friendly && friendly.color === piece.color && friendly.type !== 'king') {
+                  moves.push({
+                    from: pos,
+                    to: { row: nr, col: nc },
+                    piece,
+                    isSwap: true,
+                    san: `K↔${friendly.type[0].toUpperCase()}`,
+                  });
+                }
+              }
+            }
+          }
+        }
+
         // Castling
         if (!piece.hasMoved && !this.isKingInCheck(this.turn)) {
           const r = row;
@@ -403,7 +437,15 @@ export class ChessGameState {
 
   // Fast move application without full validation (for engine search and clone checking)
   applyMoveFast(move: Move): void {
-    const { from, to, piece, captured, isEnPassant, isCastling, promotion } = move;
+    const { from, to, piece, captured, isEnPassant, isCastling, promotion, isSwap } = move;
+
+    // Handle swap mechanic (e.g. Ninjas smoke clone swap)
+    if (isSwap) {
+      const targetPiece = this.board[to.row][to.col];
+      this.board[to.row][to.col] = { ...piece, hasMoved: true };
+      this.board[from.row][from.col] = targetPiece ? { ...targetPiece, hasMoved: true } : null;
+      return;
+    }
 
     // Remove moving piece from origin
     this.board[from.row][from.col] = null;

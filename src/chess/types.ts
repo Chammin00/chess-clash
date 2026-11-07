@@ -33,6 +33,7 @@ export interface Move {
   captured?: ChessPiece;
   isEnPassant?: boolean;
   isCastling?: 'kingside' | 'queenside';
+  isSwap?: boolean;
   promotion?: PieceType;
   san: string; // Standard algebraic notation like "Nf3", "O-O", "e4", "Qxd7#"
   evaluation?: number;
@@ -42,10 +43,20 @@ export type GameStatus = 'ongoing' | 'check' | 'checkmate' | 'stalemate' | 'draw
 
 export interface ThemePieceLore {
   title: string;
-  icon: string; // Emoji / Symbol representation
+  icon: string; // Vector insignia identifier
   subtitle: string;
   specialAbility: string;
   description: string;
+  moveRadius: string;
+  triggerCondition: string;
+  tacticalRole: string;
+}
+
+export interface FactionModifier {
+  name: string;
+  trigger: string;
+  effect: string;
+  mechanicType: 'swap' | 'shield' | 'counter' | 'charge' | 'resurrect' | 'stealth';
 }
 
 export interface ThemeConfig {
@@ -63,6 +74,7 @@ export interface ThemeConfig {
   pieces: Record<PieceType, ThemePieceLore>;
   boardTextureName: string;
   factionBanner: string;
+  factionModifier: FactionModifier;
 }
 
 export type ChessEngineModelType = 'stockfish' | 'maia' | 'alphazero';

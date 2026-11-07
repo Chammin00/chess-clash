@@ -58,9 +58,9 @@ export const IAP_PRODUCTS: IAPProduct[] = [
     discountPct: 85,
   },
   {
-    id: 'com.aether.no_ads_vip',
-    title: 'Ad-Free & Supporter Club',
-    description: 'Permanently removes all interstitial and banner ads. Instant 1-click claim on all rewarded bonuses!',
+    id: 'com.aether.supporter_club',
+    title: 'Grandmaster Supporter Club',
+    description: 'Permanent unlock for all 10 custom vector kingdom heraldries, golden board frames, and offline campaign modes.',
     priceUsd: '$4.99',
     type: 'non_consumable',
     icon: '🛡️',

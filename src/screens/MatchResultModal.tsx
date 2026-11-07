@@ -114,20 +114,10 @@ export const MatchResultModal: React.FC<Props> = ({
             </View>
           </View>
 
-          {/* Rewarded Ad Option */}
-          {!rewardDoubled && isWin && (
-            <TouchableOpacity style={styles.adRewardBtn} onPress={onWatchAdForDoubleRewards}>
-              <Text style={styles.adRewardIcon}>📺</Text>
-              <View style={styles.adRewardTextCol}>
-                <Text style={styles.adRewardTitle}>DOUBLE GOLD BONUS</Text>
-                <Text style={styles.adRewardSub}>Watch a quick video to claim +{result.goldEarned} Gold</Text>
-              </View>
-            </TouchableOpacity>
-          )}
-
-          {rewardDoubled && (
+          {/* Victory Bonus Banner */}
+          {isWin && (
             <View style={styles.rewardDoubledBanner}>
-              <Text style={styles.doubledText}>🎉 2X GOLD CLAIMED!</Text>
+              <Text style={styles.doubledText}>VICTORY STRIKE COMMENDATION</Text>
             </View>
           )}
 

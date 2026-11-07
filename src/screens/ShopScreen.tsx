@@ -240,25 +240,25 @@ export const ShopScreen: React.FC<Props> = ({
         {/* TAB 2: IN-APP PURCHASES (GEMS & PERMANENT PERKS) */}
         {activeTab === 'gems' && (
           <>
-            {/* No Ads VIP Pass */}
+            {/* Grandmaster Supporter Club */}
             <View style={styles.vipPassCard}>
               <View style={styles.vipTag}>
                 <Text style={styles.vipTagText}>
-                  {profile.hasNoAds ? 'ACTIVE' : 'BEST SELLER'}
+                  SUPPORTER EDITION
                 </Text>
               </View>
               <Text style={styles.vipPassIcon}>🛡️</Text>
-              <Text style={styles.vipPassTitle}>Permanent Ad-Free & Supporter Club</Text>
+              <Text style={styles.vipPassTitle}>Grandmaster Supporter Club</Text>
               <Text style={styles.vipPassDesc}>
-                Removes all interstitial and banner ads forever! Auto-claims rewarded ad bonuses instantly without watching videos.
+                Unlock all 10 Kingdom custom vector heraldries, exclusive gold board trims, and offline local battle modes. Pure premium experience forever.
               </Text>
               <TouchableOpacity
                 disabled={profile.hasNoAds || isProcessing}
                 style={[styles.buyVipBtn, profile.hasNoAds && styles.buyVipBtnOwned]}
-                onPress={() => handleBuyProduct('com.aether.no_ads_vip')}
+                onPress={() => handleBuyProduct('com.aether.supporter_club')}
               >
                 <Text style={styles.buyVipBtnText}>
-                  {profile.hasNoAds ? '✓ OWNED FOREVER' : 'UNLOCK NO-ADS ($4.99)'}
+                  {profile.hasNoAds ? '✓ SUPPORTER UNLOCKED' : 'JOIN SUPPORTER CLUB ($4.99)'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -356,20 +356,18 @@ export const ShopScreen: React.FC<Props> = ({
           <View style={styles.featuredCard}>
             <View style={styles.featuredTag}>
               <Text style={styles.featuredTagText}>
-                {profile.hasNoAds ? 'INSTANT VIP CLAIM' : 'SPONSORED REWARD'}
+                DAILY LOGIN REWARD
               </Text>
             </View>
             <Text style={styles.packIcon}>🎁</Text>
-            <Text style={styles.packTitle}>Daily Mystery Booster</Text>
+            <Text style={styles.packTitle}>Tactician Daily Supply</Text>
             <Text style={styles.packDesc}>
-              {profile.hasNoAds
-                ? 'Your VIP Supporter status allows you to claim rewards with 1-click!'
-                : 'Watch a short video sponsor to unlock +150 Gold, 15 Gems, and bonus card draft!'}
+              Claim your daily loyalty ration: +150 Gold, 15 Gems, and tactical draft voucher. No ads or video requirements.
             </Text>
 
             <TouchableOpacity style={styles.watchAdBtn} onPress={onWatchAdForPack}>
               <Text style={styles.watchAdText}>
-                {profile.hasNoAds ? '👑 CLAIM REWARD INSTANTLY' : '📺 WATCH VIDEO TO CLAIM'}
+                CLAIM DAILY REWARD
               </Text>
             </TouchableOpacity>
           </View>

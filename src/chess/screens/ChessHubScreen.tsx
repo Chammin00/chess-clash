@@ -7,9 +7,10 @@ import {
   TouchableOpacity,
   Modal,
 } from 'react-native';
-import { GameThemeId, PlayerChessProfile, ThemeConfig } from '../types';
+import { GameThemeId, PlayerChessProfile, ThemeConfig, PieceType } from '../types';
 import { THEME_CONFIGS } from '../themes';
 import { getTierColor, getTierIcon } from '../services/chessMMRService';
+import { VectorPiece } from '../components/VectorPiece';
 
 interface ChessHubScreenProps {
   profile: PlayerChessProfile;
@@ -238,7 +239,7 @@ export const ChessHubScreen: React.FC<ChessHubScreenProps> = ({
               <>
                 <View style={styles.modalHeader}>
                   <Text style={styles.modalTitle}>
-                    {selectedThemeForModal.factionBanner} {selectedThemeForModal.name}
+                    [{selectedThemeForModal.factionBanner}] {selectedThemeForModal.name}
                   </Text>
                   <TouchableOpacity onPress={() => setSelectedThemeForModal(null)}>
                     <Text style={styles.modalCloseText}>✕</Text>
@@ -246,17 +247,33 @@ export const ChessHubScreen: React.FC<ChessHubScreenProps> = ({
                 </View>
                 <Text style={styles.modalLoreText}>{selectedThemeForModal.lore}</Text>
 
+                {/* Asymmetric Faction Modifier Banner */}
+                {selectedThemeForModal.factionModifier && (
+                  <View style={{ backgroundColor: 'rgba(99, 102, 241, 0.15)', borderWidth: 1, borderColor: selectedThemeForModal.primaryColor, borderRadius: 8, padding: 10, marginVertical: 8 }}>
+                    <Text style={{ color: selectedThemeForModal.highlightColor, fontSize: 13, fontWeight: '800', marginBottom: 2 }}>
+                      FACTION TRAIT: {selectedThemeForModal.factionModifier.name.toUpperCase()}
+                    </Text>
+                    <Text style={{ color: '#E2E8F0', fontSize: 12 }}>
+                      {selectedThemeForModal.factionModifier.effect}
+                    </Text>
+                  </View>
+                )}
+
                 <ScrollView style={styles.modalPieceList}>
                   {Object.entries(selectedThemeForModal.pieces).map(([type, piece]) => (
                     <View key={type} style={styles.modalPieceItem}>
-                      <Text style={styles.modalPieceIcon}>{piece.icon}</Text>
+                      <View style={{ width: 44, height: 44, justifyContent: 'center', alignItems: 'center' }}>
+                        <VectorPiece type={type as PieceType} color="white" size={36} />
+                      </View>
                       <View style={styles.modalPieceInfo}>
                         <View style={styles.modalPieceNameRow}>
                           <Text style={styles.modalPieceTitle}>{piece.title}</Text>
                           <Text style={styles.modalPieceType}>({type.toUpperCase()})</Text>
                         </View>
                         <Text style={styles.modalPieceAbility}>{piece.specialAbility}</Text>
-                        <Text style={styles.modalPieceDesc}>{piece.description}</Text>
+                        <Text style={styles.modalPieceDesc}>
+                          {piece.description} • {piece.moveRadius}
+                        </Text>
                       </View>
                     </View>
                   ))}

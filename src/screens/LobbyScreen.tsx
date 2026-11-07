@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { RankBadge } from '../components/RankBadge';
-import { AdBannerView } from '../components/AdBannerView';
 import { PlayerProfile } from '../types/mmr';
 import { MmrEngine } from '../services/mmrEngine';
 import { FACTION_CONFIGS } from '../config/factions';
@@ -215,9 +214,6 @@ export const LobbyScreen: React.FC<Props> = ({
             <Text style={styles.navDesc}>Season Rewards</Text>
           </TouchableOpacity>
         </View>
-
-        {/* Ad Banner View at bottom */}
-        <AdBannerView />
       </ScrollView>
     </View>
   );

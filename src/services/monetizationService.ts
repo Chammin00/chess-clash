@@ -47,7 +47,7 @@ export class MonetizationService {
           updated.unlockedCardIds = [...updated.unlockedCardIds, 'dawn_valkyrie'];
         }
         break;
-      case 'com.aether.no_ads_vip':
+      case 'com.aether.supporter_club':
         updated.hasNoAds = true;
         updated.avatarFrame = 'vip_crest';
         break;

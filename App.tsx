@@ -9,7 +9,6 @@ import { DeckBuilderScreen } from './src/screens/DeckBuilderScreen';
 import { LeaderboardScreen } from './src/screens/LeaderboardScreen';
 import { ShopScreen } from './src/screens/ShopScreen';
 import { BattlePassScreen } from './src/screens/BattlePassScreen';
-import { RewardedAdModal } from './src/components/RewardedAdModal';
 import { BattlePassService } from './src/services/battlePassService';
 import { BattlePassState } from './src/types/monetization';
 import { MonetizationService } from './src/services/monetizationService';
@@ -17,7 +16,6 @@ import { PlayerProfile } from './src/types/mmr';
 import { MatchResultData } from './src/types/game';
 import { OpponentMatchCandidate } from './src/services/matchmakerService';
 import { StorageService } from './src/services/storageService';
-import { AdService } from './src/services/adService';
 import { FactionId } from './src/types/card';
 import { FACTION_CONFIGS } from './src/config/factions';
 import { ChessHubScreen } from './src/chess/screens/ChessHubScreen';
@@ -54,13 +52,6 @@ export default function App() {
   const [matchResult, setMatchResult] = useState<MatchResultData | null>(null);
   const [showResultModal, setShowResultModal] = useState(false);
   const [rewardDoubled, setRewardDoubled] = useState(false);
-
-  // Ad Modal State
-  const [adModalVisible, setAdModalVisible] = useState(false);
-  const [adRewardType, setAdRewardType] = useState('gold');
-  const [adRewardAmount, setAdRewardAmount] = useState(100);
-  const [isInterstitialAd, setIsInterstitialAd] = useState(false);
-  const [pendingRewardAction, setPendingRewardAction] = useState<(() => void) | null>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -148,57 +139,18 @@ export default function App() {
     setShowResultModal(true);
   };
 
-  // Rewarded Ad for 2x Gold
-  const handleWatchAdForDoubleRewards = () => {
-    if (!matchResult) return;
-    setAdRewardType('gold');
-    setAdRewardAmount(matchResult.goldEarned);
-    setIsInterstitialAd(false);
-    setPendingRewardAction(() => async () => {
-      setRewardDoubled(true);
-      const extraGold = matchResult.goldEarned;
-      const updated = { ...profile, gold: profile.gold + extraGold };
-      setProfile(updated);
-      await StorageService.saveProfile(updated);
-    });
-    setAdModalVisible(true);
+  // Daily Free Supply Ration (Zero Ads)
+  const handleClaimDailySupply = async () => {
+    const updated = { ...profile, gold: profile.gold + 150, gems: profile.gems + 10 };
+    setProfile(updated);
+    await StorageService.saveProfile(updated);
   };
 
-  // Rewarded Ad in Shop for Daily Mystery Pack
-  const handleWatchAdForShopPack = () => {
-    setAdRewardType('gold & gems');
-    setAdRewardAmount(150);
-    setIsInterstitialAd(false);
-    setPendingRewardAction(() => async () => {
-      const updated = { ...profile, gold: profile.gold + 150, gems: profile.gems + 10 };
-      setProfile(updated);
-      await StorageService.saveProfile(updated);
-    });
-    setAdModalVisible(true);
-  };
-
-  // Dismiss Post-Match Modal & check for Interstitial Ad
+  // Dismiss Post-Match Modal (Zero Interstitials)
   const handleCloseResultModal = () => {
     setShowResultModal(false);
     setScreen('lobby');
     setActiveOpponent(null);
-
-    // Evaluate AdMob interstitial frequency policy
-    if (AdService.shouldShowInterstitial(profile)) {
-      AdService.markInterstitialShown();
-      setTimeout(() => {
-        setIsInterstitialAd(true);
-        setPendingRewardAction(null);
-        setAdModalVisible(true);
-      }, 500);
-    }
-  };
-
-  const handleClaimAdReward = () => {
-    if (pendingRewardAction) {
-      pendingRewardAction();
-      setPendingRewardAction(null);
-    }
   };
 
   const handleSaveDeck = async (newDeckIds: string[]) => {
@@ -315,13 +267,9 @@ export default function App() {
         <ShopScreen
           profile={profile}
           onWatchAdForPack={() => {
-            if (profile.isVip || profile.hasNoAds) {
-              const updated = { ...profile, gold: profile.gold + 150, gems: profile.gems + 15 };
-              setProfile(updated);
-              StorageService.saveProfile(updated);
-              return;
-            }
-            handleWatchAdForShopPack();
+            const updated = { ...profile, gold: profile.gold + 150, gems: profile.gems + 15 };
+            setProfile(updated);
+            StorageService.saveProfile(updated);
           }}
           onProfileUpdate={(updated) => setProfile(updated)}
           onOpenBattlePass={() => setScreen('battlepass')}
@@ -414,18 +362,8 @@ export default function App() {
         visible={showResultModal}
         result={matchResult}
         rewardDoubled={rewardDoubled}
-        onWatchAdForDoubleRewards={handleWatchAdForDoubleRewards}
+        onWatchAdForDoubleRewards={() => {}}
         onContinue={handleCloseResultModal}
-      />
-
-      {/* Rewarded / Interstitial Ad Simulation Modal */}
-      <RewardedAdModal
-        visible={adModalVisible}
-        rewardType={adRewardType}
-        rewardAmount={adRewardAmount}
-        isInterstitial={isInterstitialAd}
-        onRewardClaimed={handleClaimAdReward}
-        onClose={() => setAdModalVisible(false)}
       />
     </SafeAreaView>
   );
