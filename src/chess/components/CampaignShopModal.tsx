@@ -3,6 +3,7 @@ import { StyleSheet, View, Text, TouchableOpacity, Modal, ScrollView, Alert } fr
 import { CAMPAIGN_ITEMS } from '../campaign/campaignData';
 import { CampaignProgress, PowerupItemId } from '../campaign/types';
 import { CampaignService } from '../campaign/campaignService';
+import { ChessAudio } from '../services/chessAudioService';
 
 interface CampaignShopModalProps {
   visible: boolean;
@@ -28,6 +29,7 @@ export const CampaignShopModal: React.FC<CampaignShopModalProps> = ({
 
     const res = await CampaignService.buyItem(itemId);
     if (res.success) {
+      ChessAudio.playCoin();
       onUpdateProgress(res.progress);
     }
   };

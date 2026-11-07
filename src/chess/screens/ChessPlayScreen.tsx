@@ -28,6 +28,7 @@ import { ChessMMRService } from '../services/chessMMRService';
 import { CampaignStage, PowerupItemId } from '../campaign/types';
 import { CampaignService } from '../campaign/campaignService';
 import { CampaignInventoryBar } from '../components/CampaignInventoryBar';
+import { ChessAudio } from '../services/chessAudioService';
 
 interface ChessPlayScreenProps {
   themeId: GameThemeId;
@@ -163,14 +164,17 @@ export const ChessPlayScreen: React.FC<ChessPlayScreenProps> = ({
         result = 'win';
         title = 'VICTORY!';
         desc = `Checkmate! You conquered ${opponent.name}'s realm.`;
+        ChessAudio.playVictory();
       } else {
         result = 'loss';
         title = 'DEFEAT';
         desc = `${opponent.name} conquered your citadel in checkmate.`;
+        ChessAudio.playDefeat();
       }
     } else if (state.status === 'stalemate') {
       title = 'STALEMATE';
       desc = 'No legal moves remaining. Honors are shared.';
+      ChessAudio.playDefeat();
     } else if (state.status === 'draw_material') {
       title = 'INSUFFICIENT MATERIAL';
       desc = 'Neither kingdom possesses enough forces to checkmate.';
@@ -293,6 +297,16 @@ export const ChessPlayScreen: React.FC<ChessPlayScreenProps> = ({
     const newEval = StockfishModel.evaluate(nextState);
     setEvaluation(newEval);
 
+    // Game Studio Procedural Audio & Kinesthetics
+    if (move.captured) {
+      ChessAudio.playCapture();
+    } else {
+      ChessAudio.playMove();
+    }
+    if (nextState.isKingInCheck(nextState.turn)) {
+      setTimeout(() => ChessAudio.playCheck(), 120);
+    }
+
     checkGameOver(nextState);
   };
 
@@ -320,6 +334,7 @@ export const ChessPlayScreen: React.FC<ChessPlayScreenProps> = ({
       setValidMoves([]);
       setLastMove(restored.moveHistory[restored.moveHistory.length - 1] || null);
       setEvaluation(StockfishModel.evaluate(restored));
+      ChessAudio.playRewind();
       Alert.alert('⌛ Hourglass of Time', 'Time reversed! Your last move was redone.');
       return;
     }
@@ -345,6 +360,7 @@ export const ChessPlayScreen: React.FC<ChessPlayScreenProps> = ({
       setValidMoves([]);
       setLastMove(restored.moveHistory[restored.moveHistory.length - 1] || null);
       setEvaluation(StockfishModel.evaluate(restored));
+      ChessAudio.playRewind();
       Alert.alert('🌀 Chronos Rewind', `Time leaped backward ${stateHistory.length - targetIndex} half-moves!`);
       return;
     }
