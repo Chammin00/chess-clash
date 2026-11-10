@@ -31,10 +31,10 @@ export const MatchmakingScreen: React.FC<Props> = ({
   useEffect(() => {
     // Trigger match discovery after simulated queue wait (3 to 6 seconds)
     if (seconds >= 3 && !matchCandidate) {
-      const opp = MatchmakerService.findOpponent(playerProfile.mmr, playerProfile.selectedFaction || 'shinobi', seconds);
+      const opp = MatchmakerService.findOpponent(playerProfile.mmr, seconds);
       setMatchCandidate(opp);
     }
-  }, [seconds, matchCandidate, playerProfile.mmr, playerProfile.selectedFaction]);
+  }, [seconds, matchCandidate, playerProfile.mmr]);
 
   useEffect(() => {
     if (!matchCandidate) return;
@@ -55,36 +55,25 @@ export const MatchmakingScreen: React.FC<Props> = ({
 
   const searchTolerance = 40 + Math.min(250, seconds * 20);
 
-  const getFactionEmblem = (faction?: string) => {
-    switch (faction) {
-      case 'shinobi': return '🥷';
-      case 'bushido': return '⚔️';
-      case 'yokai': return '👹';
-      case 'onmyo': return '⛩️';
-      case 'shogunate': return '🏯';
-      default: return '🥷';
-    }
-  };
-
   return (
     <View style={styles.container}>
       {!matchCandidate ? (
         /* Searching State */
         <View style={styles.searchingBox}>
           <View style={styles.radarRing}>
-            <ActivityIndicator size="large" color="#F59E0B" />
+            <ActivityIndicator size="large" color="#38BDF8" />
           </View>
 
-          <Text style={styles.searchingTitle}>SEEKING CLAN RIVAL...</Text>
+          <Text style={styles.searchingTitle}>FINDING RIVAL...</Text>
           <Text style={styles.queueTimer}>
-            Searching the provinces: 00:{seconds < 10 ? `0${seconds}` : seconds}
+            Time elapsed: 00:{seconds < 10 ? `0${seconds}` : seconds}
           </Text>
 
           <View style={styles.criteriaBox}>
             <Text style={styles.criteriaText}>
               Target MMR: {playerProfile.mmr} (±{searchTolerance})
             </Text>
-            <Text style={styles.criteriaSub}>Matching compatible Gwent warlord</Text>
+            <Text style={styles.criteriaSub}>Expanding search window for fast queue</Text>
           </View>
 
           <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
@@ -95,17 +84,16 @@ export const MatchmakingScreen: React.FC<Props> = ({
         /* Match Found Splash */
         <View style={styles.matchFoundBox}>
           <View style={styles.matchFoundBanner}>
-            <Text style={styles.matchFoundText}>⚔️ CLAN SHOWDOWN FOUND! ⚔️</Text>
+            <Text style={styles.matchFoundText}>⚔️ MATCH FOUND! ⚔️</Text>
           </View>
 
           <View style={styles.versusRow}>
             {/* Player Side */}
             <View style={styles.sideCard}>
-              <View style={[styles.avatarCircle, { backgroundColor: '#78350F' }]}>
-                <Text style={styles.avatarEmoji}>{getFactionEmblem(playerProfile.selectedFaction)}</Text>
+              <View style={[styles.avatarCircle, { backgroundColor: '#2563EB' }]}>
+                <Text style={styles.avatarEmoji}>🧙‍♂️</Text>
               </View>
               <Text numberOfLines={1} style={styles.sideName}>{playerProfile.name}</Text>
-              <Text style={styles.factionLabelText}>{playerProfile.selectedFaction?.toUpperCase() || 'SHINOBI'}</Text>
               <RankBadge mmr={playerProfile.mmr} size="small" />
             </View>
 
@@ -115,18 +103,17 @@ export const MatchmakingScreen: React.FC<Props> = ({
 
             {/* Opponent Side */}
             <View style={styles.sideCard}>
-              <View style={[styles.avatarCircle, { backgroundColor: '#991B1B' }]}>
-                <Text style={styles.avatarEmoji}>{getFactionEmblem(matchCandidate.faction)}</Text>
+              <View style={[styles.avatarCircle, { backgroundColor: '#DC2626' }]}>
+                <Text style={styles.avatarEmoji}>👾</Text>
               </View>
               <Text numberOfLines={1} style={styles.sideName}>{matchCandidate.name}</Text>
-              <Text style={styles.factionLabelText}>{matchCandidate.faction.toUpperCase()}</Text>
               <RankBadge mmr={matchCandidate.mmr} size="small" />
             </View>
           </View>
 
           <View style={styles.countdownPill}>
             <Text style={styles.countdownText}>
-              Duelling in {countdown}s...
+              Entering Arena in {countdown}s...
             </Text>
           </View>
         </View>
@@ -172,21 +159,16 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   criteriaBox: {
-    backgroundColor: '#18181B',
+    backgroundColor: '#1E293B',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.10)',
+    borderColor: '#334155',
     alignItems: 'center',
     marginBottom: 32,
     width: '100%',
     maxWidth: 320,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.10,
-    shadowRadius: 12,
-    elevation: 3,
   },
   criteriaText: {
     color: '#38BDF8',
@@ -201,7 +183,7 @@ const styles = StyleSheet.create({
   cancelButton: {
     borderWidth: 1.5,
     borderColor: '#EF4444',
-    borderRadius: 10,
+    borderRadius: 12,
     paddingHorizontal: 24,
     paddingVertical: 12,
     backgroundColor: 'rgba(239, 68, 68, 0.1)',
@@ -237,18 +219,13 @@ const styles = StyleSheet.create({
     marginBottom: 36,
   },
   sideCard: {
-    backgroundColor: '#18181B',
-    borderRadius: 12,
+    backgroundColor: '#1E293B',
+    borderRadius: 16,
     padding: 16,
     alignItems: 'center',
     width: 130,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.10)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.10,
-    shadowRadius: 12,
-    elevation: 3,
+    borderColor: '#334155',
   },
   avatarCircle: {
     width: 48,
@@ -265,15 +242,8 @@ const styles = StyleSheet.create({
     color: '#F8FAFC',
     fontSize: 12,
     fontWeight: '700',
-    marginBottom: 2,
+    marginBottom: 8,
     textAlign: 'center',
-  },
-  factionLabelText: {
-    color: '#F59E0B',
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 0.5,
-    marginBottom: 6,
   },
   vsBadge: {
     width: 40,
@@ -289,17 +259,12 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   countdownPill: {
-    backgroundColor: '#18181B',
+    backgroundColor: '#1E293B',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: '#38BDF8',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
   },
   countdownText: {
     color: '#38BDF8',

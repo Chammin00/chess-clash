@@ -1,45 +1,34 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { CardView } from '../components/CardView';
-import { CARD_COLLECTION, getCardById, getCardsByFaction } from '../config/cards';
-import { Card, CombatRow, FactionId } from '../types/card';
-import { FACTION_CONFIGS } from '../config/factions';
+import { CARD_COLLECTION, getCardById } from '../config/cards';
+import { Card } from '../types/card';
 import { SoundService } from '../services/soundService';
 
 interface Props {
-  currentFaction: FactionId;
   currentDeckIds: string[];
   onSaveDeck: (newDeckIds: string[]) => void;
   onBack: () => void;
 }
 
 export const DeckBuilderScreen: React.FC<Props> = ({
-  currentFaction,
   currentDeckIds,
   onSaveDeck,
   onBack,
 }) => {
   const [deckIds, setDeckIds] = useState<string[]>([...currentDeckIds]);
-  const [filterRow, setFilterRow] = useState<'all' | 'melee' | 'ranged' | 'siege' | 'special'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'unit' | 'spell'>('all');
 
-  const factionConfig = FACTION_CONFIGS[currentFaction as Exclude<FactionId, 'neutral'>];
   const deckCards = deckIds.map(id => getCardById(id)).filter((c): c is Card => !!c);
 
-  // Total Deck Strength calculation
-  const totalDeckPower = deckCards.reduce((acc, c) => acc + c.power, 0);
-  const totalUnitCount = deckCards.filter(c => c.type === 'unit').length;
-  const totalSpecialCount = deckCards.filter(c => c.type === 'special' || c.type === 'weather').length;
-
-  const factionCards = getCardsByFaction(currentFaction);
-  const filteredAvailable = factionCards.filter(card => {
-    if (filterRow === 'all') return true;
-    if (filterRow === 'special') return card.type === 'special' || card.type === 'weather';
-    return card.row === filterRow || card.row === 'agile';
+  const availableCards = CARD_COLLECTION.filter(card => {
+    if (filterType !== 'all' && card.type !== filterType) return false;
+    return true;
   });
 
   const handleRemoveFromDeck = (index: number) => {
     if (deckIds.length <= 10) {
-      Alert.alert('Minimum Deck Size', 'Your battle deck must contain at least 10 cards.');
+      Alert.alert('Deck Minimum', 'Your deck must contain at least 10 cards.');
       return;
     }
     SoundService.playButtonClick();
@@ -49,13 +38,13 @@ export const DeckBuilderScreen: React.FC<Props> = ({
   };
 
   const handleAddToDeck = (cardId: string) => {
-    if (deckIds.length >= 25) {
-      Alert.alert('Deck Limit', 'Maximum deck size is 25 cards.');
+    if (deckIds.length >= 15) {
+      Alert.alert('Deck Limit', 'Maximum deck size is 15 cards.');
       return;
     }
     const count = deckIds.filter(id => id === cardId).length;
-    if (count >= 3) {
-      Alert.alert('Card Limit', 'Maximum 3 copies of any non-special card permitted.');
+    if (count >= 2) {
+      Alert.alert('Duplicate Limit', 'You can only have up to 2 copies of the same card in your deck.');
       return;
     }
     SoundService.playCardDrop();
@@ -64,242 +53,183 @@ export const DeckBuilderScreen: React.FC<Props> = ({
 
   const handleSave = () => {
     onSaveDeck(deckIds);
-    Alert.alert('Clan Deck Saved', `Your ${factionConfig.name} deck has been updated!`);
+    Alert.alert('Deck Saved', 'Your battle deck has been updated!');
     onBack();
   };
 
   return (
-    <View style={styles.screen}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <Text style={styles.backButtonText}>← Back</Text>
+    <View style={styles.container}>
+      {/* Top Bar */}
+      <View style={styles.topBar}>
+        <TouchableOpacity style={styles.backBtn} onPress={onBack}>
+          <Text style={styles.backText}>‹ BACK</Text>
         </TouchableOpacity>
-        <View style={styles.headerTitleContainer}>
-          <Text style={[styles.headerTitle, { color: factionConfig.accentColor }]}>
-            {factionConfig.emblem} {factionConfig.name} Deck
-          </Text>
-          <Text style={styles.headerStats}>
-            {deckIds.length} Cards • ⚔️ {totalDeckPower} Power • 🛡️ {totalUnitCount} Units • ⚡ {totalSpecialCount} Specials
-          </Text>
-        </View>
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>Save</Text>
+        <Text style={styles.title}>DECK BUILDER ({deckIds.length}/15)</Text>
+        <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
+          <Text style={styles.saveText}>SAVE</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Active Deck Tray */}
+      {/* Active Deck Strip */}
       <View style={styles.deckSection}>
-        <Text style={styles.sectionTitle}>
-          ACTIVE DECK CARDS (Tap card to remove):
-        </Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.deckScroll}
-        >
+        <Text style={styles.sectionHeader}>ACTIVE BATTLE DECK (Tap card to remove)</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.deckScroll}>
           {deckCards.map((card, idx) => (
             <CardView
-              key={`${card.id}_${idx}`}
+              key={'deck_' + idx}
               card={card}
+              compact
               onPress={() => handleRemoveFromDeck(idx)}
             />
           ))}
         </ScrollView>
       </View>
 
-      {/* Filter Row Tabs */}
-      <View style={styles.filterBar}>
-        <TouchableOpacity
-          style={[styles.filterTab, filterRow === 'all' && styles.filterTabActive]}
-          onPress={() => setFilterRow('all')}
-        >
-          <Text style={[styles.filterText, filterRow === 'all' && styles.filterTextActive]}>ALL</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.filterTab, filterRow === 'melee' && styles.filterTabActive]}
-          onPress={() => setFilterRow('melee')}
-        >
-          <Text style={[styles.filterText, filterRow === 'melee' && styles.filterTextActive]}>⚔️ MELEE</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.filterTab, filterRow === 'ranged' && styles.filterTabActive]}
-          onPress={() => setFilterRow('ranged')}
-        >
-          <Text style={[styles.filterText, filterRow === 'ranged' && styles.filterTextActive]}>🏹 RANGED</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.filterTab, filterRow === 'siege' && styles.filterTabActive]}
-          onPress={() => setFilterRow('siege')}
-        >
-          <Text style={[styles.filterText, filterRow === 'siege' && styles.filterTextActive]}>🏯 SIEGE</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.filterTab, filterRow === 'special' && styles.filterTabActive]}
-          onPress={() => setFilterRow('special')}
-        >
-          <Text style={[styles.filterText, filterRow === 'special' && styles.filterTextActive]}>⚡ SPECIAL</Text>
-        </TouchableOpacity>
+      {/* Filter Tabs */}
+      <View style={styles.filterRow}>
+        {(['all', 'unit', 'spell'] as const).map(tab => (
+          <TouchableOpacity
+            key={tab}
+            style={[styles.filterTab, filterType === tab && styles.filterTabActive]}
+            onPress={() => setFilterType(tab)}
+          >
+            <Text style={[styles.filterTabText, filterType === tab && styles.filterTabTextActive]}>
+              {tab.toUpperCase()}S
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
-      {/* Available Faction Collection */}
-      <View style={styles.collectionSection}>
-        <Text style={styles.sectionTitle}>
-          FACTION VAULT (Tap card to add to deck):
-        </Text>
-        <ScrollView
-          contentContainerStyle={styles.collectionGrid}
-          showsVerticalScrollIndicator={false}
-        >
-          {filteredAvailable.map(card => {
-            const countInDeck = deckIds.filter(id => id === card.id).length;
-            return (
-              <View key={card.id} style={styles.vaultCardWrapper}>
-                <CardView
-                  card={card}
-                  onPress={() => handleAddToDeck(card.id)}
-                />
-                {countInDeck > 0 && (
-                  <View style={styles.countBadge}>
-                    <Text style={styles.countBadgeText}>{countInDeck} in deck</Text>
-                  </View>
-                )}
+      {/* Collection Catalog */}
+      <Text style={styles.collectionHeader}>CARD COLLECTION (Tap to add to deck)</Text>
+      <ScrollView contentContainerStyle={styles.catalogGrid} showsVerticalScrollIndicator={false}>
+        {availableCards.map(card => {
+          const inDeckCount = deckIds.filter(id => id === card.id).length;
+          return (
+            <View key={card.id} style={styles.cardWrapper}>
+              <CardView card={card} onPress={() => handleAddToDeck(card.id)} />
+              <View style={styles.inDeckBadge}>
+                <Text style={styles.inDeckText}>{inDeckCount}/2 in deck</Text>
               </View>
-            );
-          })}
-        </ScrollView>
-      </View>
+            </View>
+          );
+        })}
+      </ScrollView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  screen: {
+  container: {
     flex: 1,
-    backgroundColor: '#0C0A09',
+    backgroundColor: '#0F172A',
+    paddingTop: 8,
   },
-  header: {
+  topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 10,
-    borderBottomWidth: 1.5,
-    borderBottomColor: '#44403C',
-    backgroundColor: '#1C1917',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1E293B',
   },
-  backButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    backgroundColor: '#292524',
-    borderRadius: 6,
+  backBtn: {
+    padding: 6,
   },
-  backButtonText: {
-    color: '#D6D3D1',
+  backText: {
+    color: '#94A3B8',
     fontSize: 12,
     fontWeight: '800',
   },
-  headerTitleContainer: {
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 15,
+  title: {
+    color: '#F8FAFC',
+    fontSize: 14,
     fontWeight: '900',
   },
-  headerStats: {
-    color: '#A8A29E',
-    fontSize: 10,
-    marginTop: 2,
-  },
-  saveButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 14,
+  saveBtn: {
     backgroundColor: '#059669',
-    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
   },
-  saveButtonText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '900',
+  saveText: {
+    color: '#FFF',
+    fontSize: 11,
+    fontWeight: '800',
   },
   deckSection: {
-    height: 200,
-    backgroundColor: '#141210',
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#292524',
+    borderBottomColor: '#1E293B',
   },
-  sectionTitle: {
-    color: '#A8A29E',
+  sectionHeader: {
+    color: '#94A3B8',
     fontSize: 10,
-    fontWeight: '800',
-    paddingHorizontal: 14,
+    fontWeight: '700',
+    paddingHorizontal: 16,
     marginBottom: 6,
-    letterSpacing: 0.5,
   },
   deckScroll: {
     paddingHorizontal: 12,
   },
-  filterBar: {
+  filterRow: {
     flexDirection: 'row',
-    backgroundColor: '#1C1917',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#44403C',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    gap: 8,
   },
   filterTab: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 14,
     paddingVertical: 4,
-    borderRadius: 6,
-    marginRight: 6,
-    backgroundColor: '#27272A',
+    borderRadius: 12,
+    backgroundColor: '#1E293B',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: '#334155',
   },
   filterTabActive: {
-    backgroundColor: '#D97706',
+    backgroundColor: '#2563EB',
+    borderColor: '#60A5FA',
   },
-  filterText: {
-    color: '#A8A29E',
+  filterTabText: {
+    color: '#94A3B8',
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '700',
   },
-  filterTextActive: {
+  filterTabTextActive: {
     color: '#FFF',
   },
-  collectionSection: {
-    flex: 1,
-    paddingTop: 8,
+  collectionHeader: {
+    color: '#94A3B8',
+    fontSize: 10,
+    fontWeight: '700',
+    paddingHorizontal: 16,
+    marginTop: 4,
+    marginBottom: 8,
   },
-  collectionGrid: {
+  catalogGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 12,
+    justifyContent: 'center',
     paddingBottom: 24,
-    justifyContent: 'space-between',
+    gap: 8,
   },
-  vaultCardWrapper: {
+  cardWrapper: {
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 8,
   },
-  countBadge: {
-    backgroundColor: '#382F2D',
-    borderRadius: 4,
+  inDeckBadge: {
+    backgroundColor: '#1E293B',
+    borderRadius: 6,
     paddingHorizontal: 6,
     paddingVertical: 2,
     marginTop: 4,
     borderWidth: 1,
-    borderColor: '#78716C',
+    borderColor: '#334155',
   },
-  countBadgeText: {
-    color: '#FEF08A',
+  inDeckText: {
+    color: '#94A3B8',
     fontSize: 9,
-    fontWeight: '800',
+    fontWeight: '700',
   },
 });

@@ -58,9 +58,9 @@ export const IAP_PRODUCTS: IAPProduct[] = [
     discountPct: 85,
   },
   {
-    id: 'com.aether.supporter_club',
-    title: 'Grandmaster Supporter Club',
-    description: 'Permanent unlock for all 10 custom vector kingdom heraldries, golden board frames, and offline campaign modes.',
+    id: 'com.aether.founder_supporter_pass',
+    title: 'Founder Vanguard Supporter Pass',
+    description: 'Permanently unlocks Founder Vanguard crest and instant 1-click claim on all daily supply drops!',
     priceUsd: '$4.99',
     type: 'non_consumable',
     icon: '🛡️',

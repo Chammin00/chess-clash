@@ -125,7 +125,7 @@ export interface MapNode {
 
 export interface SpireHero {
   name: string;
-  className: 'Riftblade' | 'Shadowstalker' | 'Chrono-Mage';
+  className: string;
   hp: number;
   maxHp: number;
   energy: number;

@@ -2,6 +2,8 @@ import React, { useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { SpireCard, SpireHero, SpireEnemy } from '../types/spire';
 import { SpireCombatEngine } from '../services/spireCombatEngine';
+import { SpireCardVectorArt } from './SpireVectorArt';
+import { getCardMotionType } from '../data/afroAsianWarriors';
 
 interface Props {
   card: SpireCard;
@@ -142,12 +144,23 @@ export const SpireCardView: React.FC<Props> = ({
           </Text>
         </View>
 
-        {/* Card Art Area */}
+        {/* Handcrafted SVG Vector Card Art Area */}
         <View style={styles.artContainer}>
-          <Text style={styles.artEmoji}>
-            {card.artEmoji || (isAttack ? '🗡️' : isSkill ? '🛡️' : isPower ? '🔮' : '⚠️')}
+          <SpireCardVectorArt
+            cardId={card.id}
+            type={card.type}
+            size={30}
+            isUpgraded={card.isUpgraded}
+          />
+          <Text style={styles.typeBanner}>
+            {card.type === 'attack'
+              ? getCardMotionType(card) === 'multi_hit'
+                ? '🌪️ MULTI-HIT'
+                : getCardMotionType(card) === 'close_quarters'
+                ? '🥊 CLOSE-QTR'
+                : '⚔️ SINGLE-HIT'
+              : card.type.toUpperCase()}
           </Text>
-          <Text style={styles.typeBanner}>{card.type.toUpperCase()}</Text>
         </View>
 
         {/* Card Effect Description (with live calculated numbers) */}
@@ -183,15 +196,15 @@ const styles = StyleSheet.create({
     padding: 6,
     marginHorizontal: 4,
     justifyContent: 'space-between',
-    elevation: 3,
+    elevation: 6,
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
+    shadowOpacity: 0.5,
+    shadowRadius: 6,
   },
   cardSelected: {
     borderWidth: 2.5,
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
+    shadowOpacity: 0.9,
+    shadowRadius: 10,
   },
   cardDisabled: {
     opacity: 0.45,
@@ -209,10 +222,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
-    elevation: 3,
+    elevation: 8,
     shadowColor: '#38BDF8',
-    shadowOpacity: 0.28,
-    shadowRadius: 8,
+    shadowOpacity: 0.7,
+    shadowRadius: 4,
   },
   energyOrbUnplayable: {
     borderColor: '#64748B',

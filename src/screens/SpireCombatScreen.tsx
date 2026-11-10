@@ -5,10 +5,25 @@ import { EnemyView } from '../components/EnemyView';
 import { SpireHeroView } from '../components/SpireHeroView';
 import { SpireCardView } from '../components/SpireCardView';
 import { SpireCombatEngine } from '../services/spireCombatEngine';
+import { SpireReviveModal } from '../components/SpireReviveModal';
+import { GameStudioEngine } from '../services/gameStudioEngine';
+import {
+  AfroAsianMotionStage,
+  ActiveMotionCue,
+} from '../components/AfroAsianMotionStage';
+import {
+  WarriorProfile,
+  AFRO_ASIAN_WARRIORS,
+  getCardChoreography,
+} from '../data/afroAsianWarriors';
 
 interface Props {
   initialHero: SpireHero;
   initialEnemy: SpireEnemy;
+  warriorProfile?: WarriorProfile;
+  customWarriorName?: string;
+  isVip?: boolean;
+  onWatchAdForRevive?: (onSuccess: () => void) => void;
   onVictory: (updatedHero: SpireHero, enemy: SpireEnemy) => void;
   onDefeat: (finalHero: SpireHero) => void;
 }
@@ -16,6 +31,10 @@ interface Props {
 export const SpireCombatScreen: React.FC<Props> = ({
   initialHero,
   initialEnemy,
+  warriorProfile = AFRO_ASIAN_WARRIORS[0],
+  customWarriorName,
+  isVip = false,
+  onWatchAdForRevive,
   onVictory,
   onDefeat,
 }) => {
@@ -25,11 +44,17 @@ export const SpireCombatScreen: React.FC<Props> = ({
   const [combatLogs, setCombatLogs] = useState<string[]>([]);
   const [floatingTexts, setFloatingTexts] = useState<FloatingText[]>([]);
   const [isEnemyTurn, setIsEnemyTurn] = useState<boolean>(false);
+  const [showReviveModal, setShowReviveModal] = useState<boolean>(false);
+  const [hasUsedRevive, setHasUsedRevive] = useState<boolean>(false);
+  const [pendingDefeatHero, setPendingDefeatHero] = useState<SpireHero | null>(null);
 
   // Inspection Modals
   const [inspectedRelic, setInspectedRelic] = useState<{ name: string; desc: string } | null>(null);
   const [inspectedPile, setInspectedPile] = useState<{ title: string; cards: SpireCard[] } | null>(null);
   const [showFullLog, setShowFullLog] = useState<boolean>(false);
+  const [hitStopActive, setHitStopActive] = useState<boolean>(false);
+  const [jukeboxActive, setJukeboxActive] = useState<boolean>(GameStudioEngine.isJukeboxPlaying());
+  const [motionCue, setMotionCue] = useState<ActiveMotionCue | null>(null);
 
   useEffect(() => {
     const init = SpireCombatEngine.startCombat(initialHero, initialEnemy);
@@ -55,11 +80,42 @@ export const SpireCombatScreen: React.FC<Props> = ({
     if (selectedCardIndex === index) {
       executePlayCard(index);
     } else {
+      GameStudioEngine.playSfx('card_lift');
       setSelectedCardIndex(index);
     }
   };
 
   const executePlayCard = (index: number) => {
+    const playedCard = hero.hand[index];
+    if (playedCard) {
+      const choreography = getCardChoreography(playedCard, warriorProfile);
+      setMotionCue({
+        id: Math.random().toString(),
+        type: choreography.type,
+        techniqueName: `${choreography.name} (${playedCard.name})`,
+        hits: choreography.hitCount || playedCard.magicNumber || 1,
+        accentColor: choreography.slashTrailColor,
+      });
+
+      if (playedCard.type === 'attack') {
+        const isHeavy =
+          choreography.type === 'single_hit' ||
+          choreography.type === 'close_quarters' ||
+          (playedCard.damage || 0) >= 12;
+        GameStudioEngine.playSfx(isHeavy ? 'heavy_strike' : 'card_strike');
+        if (isHeavy) {
+          setHitStopActive(true);
+          setTimeout(() => setHitStopActive(false), choreography.hitStopMs || 68);
+        }
+      } else if (playedCard.type === 'skill') {
+        GameStudioEngine.playSfx('shield_up');
+      } else if (playedCard.type === 'power') {
+        GameStudioEngine.playSfx('power_surge');
+      } else {
+        GameStudioEngine.playSfx('status_inflict');
+      }
+    }
+
     const res = SpireCombatEngine.playCard(hero, enemy, index);
     setHero(res.hero);
     setEnemy(res.enemy);
@@ -68,6 +124,7 @@ export const SpireCombatScreen: React.FC<Props> = ({
     setFloatingTexts(prev => [...prev, ...res.floatingTexts]);
 
     if (res.isVictory) {
+      GameStudioEngine.playSfx('victory');
       setTimeout(() => {
         onVictory(res.hero, res.enemy);
       }, 900);
@@ -76,10 +133,12 @@ export const SpireCombatScreen: React.FC<Props> = ({
 
   const handleEndTurn = () => {
     if (isEnemyTurn) return;
+    GameStudioEngine.playSfx('button_click');
     setIsEnemyTurn(true);
     setSelectedCardIndex(null);
 
     setTimeout(() => {
+      GameStudioEngine.playSfx('enemy_attack');
       const res = SpireCombatEngine.endTurn(hero, enemy);
       setHero(res.hero);
       setEnemy(res.enemy);
@@ -88,15 +147,62 @@ export const SpireCombatScreen: React.FC<Props> = ({
       setFloatingTexts(prev => [...prev, ...res.floatingTexts]);
 
       if (res.isVictory) {
+        GameStudioEngine.playSfx('victory');
         setTimeout(() => {
           onVictory(res.hero, res.enemy);
         }, 900);
       } else if (res.isDefeat) {
-        setTimeout(() => {
-          onDefeat(res.hero);
-        }, 900);
+        GameStudioEngine.playSfx('defeat');
+        if (!hasUsedRevive) {
+          setPendingDefeatHero(res.hero);
+          setShowReviveModal(true);
+        } else {
+          setTimeout(() => {
+            onDefeat(res.hero);
+          }, 900);
+        }
       }
     }, 1000);
+  };
+
+  const handleExecuteRevive = () => {
+    setHasUsedRevive(true);
+    setShowReviveModal(false);
+    const reviveAmount = Math.max(1, Math.round(hero.maxHp * 0.35));
+    const revivedHero: SpireHero = {
+      ...hero,
+      hp: reviveAmount,
+      block: hero.block + 10,
+      energy: hero.maxEnergy,
+    };
+    setHero(revivedHero);
+    setCombatLogs(prev => ['⚡ SECOND WIND ACTIVATED! Resurrected with 35% HP & 10 Block!', ...prev]);
+    setFloatingTexts(prev => [
+      ...prev,
+      { id: Math.random().toString(), text: `+${reviveAmount} HP`, color: '#22C55E', type: 'heal' },
+      { id: Math.random().toString(), text: '+10 WARD', color: '#38BDF8', type: 'block' },
+    ]);
+  };
+
+  const handleReviveWithAd = () => {
+    if (onWatchAdForRevive) {
+      onWatchAdForRevive(handleExecuteRevive);
+    } else {
+      handleExecuteRevive();
+    }
+  };
+
+  const handleInstantVipRevive = () => {
+    handleExecuteRevive();
+  };
+
+  const handleAcceptDefeat = () => {
+    setShowReviveModal(false);
+    if (pendingDefeatHero) {
+      onDefeat(pendingDefeatHero);
+    } else {
+      onDefeat(hero);
+    }
   };
 
   const handleUsePotion = (index: number) => {
@@ -208,18 +314,40 @@ export const SpireCombatScreen: React.FC<Props> = ({
           <Text style={styles.pileIcon}>🔥</Text>
           <Text style={styles.pileText}>EXHAUST: {hero.exhaustPile.length}</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.pileBadge, jukeboxActive && { borderColor: '#3FB950' }]}
+          onPress={() => setJukeboxActive(GameStudioEngine.toggleJukebox())}
+        >
+          <Text style={styles.pileText}>{jukeboxActive ? '🎵 SYNTH' : '🔇 SYNTH'}</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Enemy Stage with damage flinch, multi-hit telegraphs & status tooltips */}
-      <View style={styles.enemyStage}>
-        <EnemyView
-          enemy={enemy}
-          hero={hero}
-          isTargeted={selectedCardIndex !== null}
-          floatingTexts={floatingTexts}
-          onInspectStatus={(name, desc) => setInspectedRelic({ name, desc })}
-        />
-      </View>
+      {/* 66ms Kinesthetic Hit-Stop Impact Flash */}
+      {hitStopActive && <View style={styles.hitStopFlash} pointerEvents="none" />}
+
+      {/* Full-Motion Afro-Asian Dark Pagoda Stage (Single-Hit, Multi-Hit, Close-Quarters) */}
+      <AfroAsianMotionStage
+        warriorId={warriorProfile.id}
+        warriorName={customWarriorName || warriorProfile.name}
+        warriorTitle={warriorProfile.title}
+        weaponName={warriorProfile.weaponName}
+        portraitUri={
+          warriorProfile.id === 'kodachi_phantom'
+            ? '/assets/warriors/warrior_kodachi.png'
+            : warriorProfile.id === 'nunchaku_dragon'
+            ? '/assets/warriors/warrior_nunchaku.png'
+            : warriorProfile.id === 'kusarigama_mystic'
+            ? '/assets/warriors/warrior_kusarigama.png'
+            : '/assets/warriors/warrior_odachi.png'
+        }
+        hero={hero}
+        enemy={enemy}
+        motionCue={motionCue}
+        floatingTexts={floatingTexts}
+        isTargeted={selectedCardIndex !== null}
+        onInspectStatus={(name, desc) => setInspectedRelic({ name, desc })}
+      />
 
       {/* Combat Activity Ticker (Tap to view full combat history) */}
       <TouchableOpacity style={styles.actionTicker} onPress={() => setShowFullLog(true)}>
@@ -356,6 +484,15 @@ export const SpireCombatScreen: React.FC<Props> = ({
           </View>
         </Modal>
       )}
+
+      {/* Second Wind Revive Modal */}
+      <SpireReviveModal
+        visible={showReviveModal}
+        isVip={isVip}
+        onReviveWithAd={handleReviveWithAd}
+        onInstantVipRevive={handleInstantVipRevive}
+        onAcceptDefeat={handleAcceptDefeat}
+      />
     </View>
   );
 };
@@ -386,6 +523,15 @@ const styles = StyleSheet.create({
   },
   exhaustBadgeActive: {
     borderColor: '#F87171',
+  },
+  hitStopFlash: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 123, 114, 0.14)',
+    zIndex: 90,
   },
   pileIcon: {
     fontSize: 12,
@@ -430,10 +576,10 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     borderRadius: 8,
     alignItems: 'center',
-    elevation: 4,
+    elevation: 6,
     shadowColor: '#00F0FF',
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
+    shadowOpacity: 0.5,
+    shadowRadius: 6,
     marginVertical: 4,
   },
   playConfirmText: {
@@ -460,13 +606,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#DC2626',
     borderWidth: 1.5,
     borderColor: '#F87171',
-    borderRadius: 10,
+    borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    elevation: 4,
+    elevation: 8,
     shadowColor: '#DC2626',
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
+    shadowOpacity: 0.6,
+    shadowRadius: 8,
   },
   endTurnDisabled: {
     backgroundColor: '#334155',
@@ -480,24 +626,19 @@ const styles = StyleSheet.create({
   },
   relicModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.70)',
+    backgroundColor: 'rgba(0,0,0,0.8)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   relicModalCard: {
-    backgroundColor: '#18181B',
-    borderRadius: 20,
+    backgroundColor: '#1E293B',
+    borderRadius: 16,
     padding: 20,
     borderWidth: 1.5,
     borderColor: '#38BDF8',
     width: '85%',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 20,
-    elevation: 8,
   },
   relicModalTitle: {
     color: '#F8FAFC',
@@ -525,7 +666,7 @@ const styles = StyleSheet.create({
   },
   pileModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    backgroundColor: 'rgba(7, 10, 19, 0.96)',
     paddingTop: 40,
     paddingHorizontal: 12,
   },

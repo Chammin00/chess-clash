@@ -105,7 +105,7 @@ export const SpireRunOverModal: React.FC<Props> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.70)',
+    backgroundColor: 'rgba(0,0,0,0.85)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -113,17 +113,12 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 380,
-    backgroundColor: '#18181B',
+    backgroundColor: '#0F172A',
     borderRadius: 20,
-    borderWidth: 1.5,
+    borderWidth: 2,
     alignItems: 'center',
     overflow: 'hidden',
     paddingBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 20,
-    elevation: 8,
   },
   winBorder: {
     borderColor: '#00F0FF',
@@ -220,7 +215,7 @@ const styles = StyleSheet.create({
   deltaPill: {
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 6,
+    borderRadius: 8,
   },
   gainPill: {
     backgroundColor: 'rgba(0, 240, 255, 0.2)',
@@ -240,14 +235,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#0284C7',
     width: '90%',
     paddingVertical: 14,
-    borderRadius: 10,
+    borderRadius: 12,
     alignItems: 'center',
     marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    elevation: 3,
+    elevation: 6,
   },
   playAgainText: {
     color: '#FFF',
@@ -256,13 +247,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   lobbyBtn: {
-    backgroundColor: '#27272A',
+    backgroundColor: '#1E293B',
     width: '90%',
     paddingVertical: 12,
-    borderRadius: 10,
+    borderRadius: 12,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.10)',
   },
   lobbyText: {
     color: '#94A3B8',

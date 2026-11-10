@@ -6,7 +6,7 @@ import { SpireCard } from '../types/spire';
 export const STARTER_DECK: SpireCard[] = [
   {
     id: 'void_slash_1',
-    name: 'Void Slash',
+    name: 'Crimson Cut',
     cost: 1,
     type: 'attack',
     rarity: 'starter',
@@ -18,7 +18,7 @@ export const STARTER_DECK: SpireCard[] = [
   },
   {
     id: 'void_slash_2',
-    name: 'Void Slash',
+    name: 'Crimson Cut',
     cost: 1,
     type: 'attack',
     rarity: 'starter',
@@ -30,7 +30,7 @@ export const STARTER_DECK: SpireCard[] = [
   },
   {
     id: 'void_slash_3',
-    name: 'Void Slash',
+    name: 'Crimson Cut',
     cost: 1,
     type: 'attack',
     rarity: 'starter',
@@ -42,7 +42,7 @@ export const STARTER_DECK: SpireCard[] = [
   },
   {
     id: 'void_slash_4',
-    name: 'Void Slash',
+    name: 'Crimson Cut',
     cost: 1,
     type: 'attack',
     rarity: 'starter',
@@ -54,7 +54,7 @@ export const STARTER_DECK: SpireCard[] = [
   },
   {
     id: 'void_slash_5',
-    name: 'Void Slash',
+    name: 'Crimson Cut',
     cost: 1,
     type: 'attack',
     rarity: 'starter',
@@ -66,7 +66,7 @@ export const STARTER_DECK: SpireCard[] = [
   },
   {
     id: 'aegis_ward_1',
-    name: 'Aegis Ward',
+    name: 'Iron Tsuba Guard',
     cost: 1,
     type: 'skill',
     rarity: 'starter',
@@ -78,7 +78,7 @@ export const STARTER_DECK: SpireCard[] = [
   },
   {
     id: 'aegis_ward_2',
-    name: 'Aegis Ward',
+    name: 'Iron Tsuba Guard',
     cost: 1,
     type: 'skill',
     rarity: 'starter',
@@ -90,7 +90,7 @@ export const STARTER_DECK: SpireCard[] = [
   },
   {
     id: 'aegis_ward_3',
-    name: 'Aegis Ward',
+    name: 'Iron Tsuba Guard',
     cost: 1,
     type: 'skill',
     rarity: 'starter',
@@ -102,7 +102,7 @@ export const STARTER_DECK: SpireCard[] = [
   },
   {
     id: 'aegis_ward_4',
-    name: 'Aegis Ward',
+    name: 'Iron Tsuba Guard',
     cost: 1,
     type: 'skill',
     rarity: 'starter',
@@ -114,7 +114,7 @@ export const STARTER_DECK: SpireCard[] = [
   },
   {
     id: 'gravity_crush_1',
-    name: 'Gravity Crush',
+    name: 'Dragon Pommel Crush',
     cost: 2,
     type: 'attack',
     rarity: 'starter',
@@ -195,7 +195,7 @@ export const SPIRE_CARD_CATALOG: SpireCard[] = [
   },
   {
     id: 'colossus_edge', // Heavy Blade (2 cost, 14 dmg, Strength x3)
-    name: 'Colossus Edge',
+    name: 'Ashura Odachi Cleave',
     cost: 2,
     type: 'attack',
     rarity: 'common',
@@ -234,7 +234,7 @@ export const SPIRE_CARD_CATALOG: SpireCard[] = [
   },
   {
     id: 'plasma_ricochet', // Sword Boomerang (1 cost, 3 dmg 3 times random)
-    name: 'Plasma Ricochet',
+    name: 'Whirling Kunai Flurry',
     cost: 1,
     type: 'attack',
     rarity: 'common',

@@ -8,9 +8,9 @@ const HISTORY_KEY = '@duel_arena_match_history';
 
 const INITIAL_PROFILE: PlayerProfile = {
   id: 'player_local_' + Math.floor(Math.random() * 8999 + 1000),
-  name: 'Arena Challenger',
-  mmr: 1200,
-  peakMmr: 1200,
+  name: 'Spire Challenger',
+  mmr: 1500,
+  peakMmr: 1500,
   wins: 0,
   losses: 0,
   winStreak: 0,
@@ -18,8 +18,8 @@ const INITIAL_PROFILE: PlayerProfile = {
   gems: 30,
   unlockedCardIds: CARD_COLLECTION.map(c => c.id),
   deckCardIds: [...STARTER_DECK_CARD_IDS],
-  selectedFaction: 'shinobi',
   createdAt: Date.now(),
+  lastPlayedAt: Date.now(),
 };
 
 export class StorageService {
@@ -32,9 +32,6 @@ export class StorageService {
       const data = await AsyncStorage.getItem(PROFILE_KEY);
       if (data) {
         this.cachedProfile = JSON.parse(data);
-        if (!this.cachedProfile?.selectedFaction) {
-          this.cachedProfile!.selectedFaction = 'shinobi';
-        }
         return this.cachedProfile!;
       }
     } catch {
@@ -83,16 +80,16 @@ export class StorageService {
 
   static generateLeaderboard(player: PlayerProfile): LeaderboardEntry[] {
     const bots: LeaderboardEntry[] = [
-      { rank: 1, name: 'VortexKing', mmr: 3250, tier: 'Grandmaster', division: 1, winRate: 74 },
-      { rank: 2, name: 'AegisStorm', mmr: 2980, tier: 'Master', division: 1, winRate: 69 },
-      { rank: 3, name: 'ShadowFist', mmr: 2750, tier: 'Master', division: 1, winRate: 66 },
-      { rank: 4, name: 'Solaris', mmr: 2420, tier: 'Diamond', division: 2, winRate: 63 },
-      { rank: 5, name: 'FrostBite', mmr: 2150, tier: 'Platinum', division: 1, winRate: 59 },
-      { rank: 6, name: 'Valkyrie99', mmr: 1890, tier: 'Platinum', division: 4, winRate: 57 },
-      { rank: 7, name: 'ThunderClaw', mmr: 1650, tier: 'Gold', division: 2, winRate: 54 },
-      { rank: 8, name: 'RogueEcho', mmr: 1420, tier: 'Gold', division: 4, winRate: 52 },
-      { rank: 9, name: 'TitanGuard', mmr: 1250, tier: 'Silver', division: 2, winRate: 50 },
-      { rank: 10, name: 'BladeRunner', mmr: 1080, tier: 'Silver', division: 4, winRate: 48 },
+      { rank: 1, name: 'Sage Of The Spire', mmr: 6350, tier: 'Sage', division: 1, winRate: 79 },
+      { rank: 2, name: 'VortexGrandmaster', mmr: 5820, tier: 'Grandmaster', division: 1, winRate: 74 },
+      { rank: 3, name: 'AegisMaster', mmr: 5210, tier: 'Master', division: 1, winRate: 71 },
+      { rank: 4, name: 'LegendShadow', mmr: 4720, tier: 'Legend', division: 2, winRate: 67 },
+      { rank: 5, name: 'ChampionSolaris', mmr: 4250, tier: 'Champion', division: 2, winRate: 64 },
+      { rank: 6, name: 'DiamondFrost', mmr: 3750, tier: 'Diamond', division: 1, winRate: 61 },
+      { rank: 7, name: 'PlatinumValkyrie', mmr: 3200, tier: 'Platinum', division: 3, winRate: 58 },
+      { rank: 8, name: 'GoldThunder', mmr: 2750, tier: 'Gold', division: 2, winRate: 55 },
+      { rank: 9, name: 'SilverRogue', mmr: 2200, tier: 'Silver', division: 3, winRate: 52 },
+      { rank: 10, name: 'BronzeTitan', mmr: 1750, tier: 'Bronze', division: 2, winRate: 49 },
     ];
 
     const playerTier = MmrEngine.getTierInfo(player.mmr);

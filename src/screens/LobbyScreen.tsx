@@ -1,218 +1,381 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Image,
+  Platform,
+} from 'react-native';
 import { RankBadge } from '../components/RankBadge';
 import { PlayerProfile } from '../types/mmr';
 import { MmrEngine } from '../services/mmrEngine';
-import { FACTION_CONFIGS } from '../config/factions';
-import { FactionId } from '../types/card';
-import { SoundService } from '../services/soundService';
-import { GlyphIcon } from '../components/GlyphIcon';
-import { DesignTokens } from '../theme/designSystem';
+import { GameStudioEngine } from '../services/gameStudioEngine';
+import {
+  AFRO_ASIAN_WARRIORS,
+  WarriorProfile,
+  WarriorArchetypeId,
+  generateRandomWarriorName,
+} from '../data/afroAsianWarriors';
+import {
+  AfroAsianFighterRigSvg,
+  MotionActionType,
+} from '../components/AfroAsianMotionStage';
 
 interface Props {
   profile: PlayerProfile;
+  selectedWarrior: WarriorProfile;
+  customWarriorName: string;
+  onSelectWarrior: (warrior: WarriorProfile) => void;
+  onRandomizeName: () => void;
+  onStartSpireRun: () => void;
   onFindMatch: () => void;
   onOpenDeck: () => void;
   onOpenLeaderboard: () => void;
   onOpenShop: () => void;
   onOpenBattlePass: () => void;
-  onSelectFaction: (faction: FactionId) => void;
-  onOpenChess?: () => void;
+  onOpenGwent: () => void;
 }
+
+const WARRIOR_PORTRAIT_MAP: Record<WarriorArchetypeId, string> = {
+  odachi_vanguard: '/assets/warriors/warrior_odachi.png',
+  kodachi_phantom: '/assets/warriors/warrior_kodachi.png',
+  nunchaku_dragon: '/assets/warriors/warrior_nunchaku.png',
+  kusarigama_mystic: '/assets/warriors/warrior_kusarigama.png',
+};
 
 export const LobbyScreen: React.FC<Props> = ({
   profile,
+  selectedWarrior,
+  customWarriorName,
+  onSelectWarrior,
+  onRandomizeName,
+  onStartSpireRun,
   onFindMatch,
   onOpenDeck,
   onOpenLeaderboard,
   onOpenShop,
   onOpenBattlePass,
-  onSelectFaction,
-  onOpenChess,
+  onOpenGwent,
 }) => {
-  const currentFaction: FactionId = profile.selectedFaction || 'shinobi';
-  const factionConfig = FACTION_CONFIGS[currentFaction as Exclude<FactionId, 'neutral'>];
+  const [previewMotion, setPreviewMotion] = useState<MotionActionType>('idle');
+  const [activeMotionLabel, setActiveMotionLabel] = useState<string>(
+    selectedWarrior.motions.single_hit.name
+  );
+  const [sfxOn, setSfxOn] = useState(GameStudioEngine.isSfxEnabled());
+  const [jukeboxOn, setJukeboxOn] = useState(GameStudioEngine.isJukeboxPlaying());
+
+  const triggerPreviewMotion = (type: 'single_hit' | 'multi_hit' | 'close_quarters') => {
+    setPreviewMotion(type);
+    const spec = selectedWarrior.motions[type];
+    setActiveMotionLabel(`${spec.callout} — ${spec.name}`);
+    if (type === 'single_hit') GameStudioEngine.playSfx('heavy_strike');
+    else if (type === 'multi_hit') GameStudioEngine.playSfx('card_strike');
+    else GameStudioEngine.playSfx('enemy_attack');
+
+    setTimeout(() => {
+      setPreviewMotion('idle');
+    }, 750);
+  };
 
   const progress = MmrEngine.getProgressToNextTier(profile.mmr);
-  const totalMatches = profile.wins + profile.losses;
-  const winRate = totalMatches > 0 ? Math.round((profile.wins / totalMatches) * 100) : 0;
-
-  const factionsList = Object.values(FACTION_CONFIGS);
-
-  const handleFactionChange = (fId: FactionId) => {
-    SoundService.playButtonClick();
-    onSelectFaction(fId);
-  };
 
   return (
     <View style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Header / Currency Bar */}
-        <View style={styles.topBar}>
-          <View>
-            <Text style={styles.appTitle}>影GWENT: SHADOW BATTLE</Text>
-            <Text style={styles.appSubtitle}>Feudal Witcher Card Duel</Text>
-          </View>
-          <View style={styles.currencies}>
-            <View style={styles.currencyPill}>
-              <GlyphIcon name="gold" size={13} style={styles.curGlyph} />
-              <Text style={styles.curAmount}>{profile.gold}</Text>
-            </View>
-            <View style={styles.currencyPill}>
-              <GlyphIcon name="gem" size={13} style={styles.curGlyph} />
-              <Text style={styles.curAmount}>{profile.gems}</Text>
-            </View>
-          </View>
+      {/* Background Dark Pagoda Eclipse Art */}
+      {Platform.OS === 'web' && (
+        <Image
+          source={{ uri: '/assets/warriors/dark_pagoda_arena.png' }}
+          style={styles.bgBackdrop}
+          resizeMode="cover"
+        />
+      )}
+      <View style={styles.darkVignette} pointerEvents="none" />
+
+      {/* NARAKA: BLADEPOINT STYLE TOP NAVIGATION BAR */}
+      <View style={styles.narakaTopNav}>
+        <View style={styles.brandBlock}>
+          <Text style={styles.brandKagura}>KAGURA: ECLIPSE OF THE CRIMSON SPIRE</Text>
+          <Text style={styles.brandSub}>AFRO-ASIAN DARK FANTASY MOTION DECKBUILDER</Text>
         </View>
 
-        {/* Profile Card & MMR Status */}
-        <View style={styles.profileCard}>
-          <View style={styles.profileHeader}>
-            <View>
-              <Text style={styles.playerName}>{profile.name}</Text>
-              <Text style={styles.statsSummary}>
-                {profile.wins}W - {profile.losses}L ({winRate}% WR)
-              </Text>
-            </View>
-            <RankBadge mmr={profile.mmr} size="medium" />
+        <View style={styles.navTabsRow}>
+          <View style={[styles.navTab, styles.navTabActive]}>
+            <Text style={styles.navTabTextActive}>HEROES</Text>
           </View>
-
-          {/* Rank Progress Bar */}
-          <View style={styles.progressContainer}>
-            <View style={styles.progressLabelRow}>
-              <Text style={styles.progressLabel}>Tier Ladder Progress</Text>
-              <Text style={styles.progressPercent}>{progress.percent}%</Text>
-            </View>
-            <View style={styles.progressBarTrack}>
-              <View style={[styles.progressBarFill, { width: `${progress.percent}%` }]} />
-            </View>
-            <Text style={styles.nextTierTarget}>
-              Next division threshold: {progress.target} MMR
-            </Text>
-          </View>
-
-          {/* Win Streak Pill */}
-          {profile.winStreak >= 2 && (
-            <View style={styles.streakBanner}>
-              <Text style={styles.streakText}>
-                🔥 {profile.winStreak} WIN STREAK (+20% Elo Bonus Active!)
-              </Text>
-            </View>
-          )}
+          <TouchableOpacity style={styles.navTab} onPress={onOpenDeck}>
+            <Text style={styles.navTabText}>SCROLLS</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navTab} onPress={onFindMatch}>
+            <Text style={styles.navTabText}>DUEL ARENA</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.navTab, { borderColor: '#F59E0B' }]} onPress={onOpenGwent}>
+            <Text style={[styles.navTabText, { color: '#FCD34D' }]}>GWENT</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navTab} onPress={onOpenLeaderboard}>
+            <Text style={styles.navTabText}>RANKS</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navTab} onPress={onOpenBattlePass}>
+            <Text style={styles.navTabText}>TENACITY PASS</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navTab} onPress={onOpenShop}>
+            <Text style={styles.navTabText}>SHRINE SHOP</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Active Faction Showcase & Picker */}
-        <View style={[styles.factionShowcaseCard, { borderColor: factionConfig.color }]}>
-          <View style={styles.factionCardTop}>
-            <Text style={styles.factionKanji}>{factionConfig.kanji}</Text>
-            <View style={styles.factionTextGroup}>
-              <Text style={[styles.factionName, { color: factionConfig.accentColor }]}>
-                {factionConfig.emblem} {factionConfig.name}
-              </Text>
-              <Text style={styles.factionTagline}>{factionConfig.tagline}</Text>
-            </View>
+        <View style={styles.currencyCluster}>
+          <TouchableOpacity
+            style={[styles.audioPill, jukeboxOn && styles.audioPillActive]}
+            onPress={() => setJukeboxOn(GameStudioEngine.toggleJukebox())}
+          >
+            <Text style={styles.audioPillText}>{jukeboxOn ? '🎵 BGM ON' : '🎹 BGM'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.audioPill, sfxOn && styles.audioPillActive]}
+            onPress={() => setSfxOn(GameStudioEngine.toggleSfx())}
+          >
+            <Text style={styles.audioPillText}>{sfxOn ? '🔊 SFX' : '🔇 SFX'}</Text>
+          </TouchableOpacity>
+          <View style={styles.currencyPill}>
+            <Text style={styles.curText}>🪙 {profile.gold}</Text>
           </View>
-
-          <View style={styles.factionPassiveBox}>
-            <Text style={styles.passiveTitle}>
-              ⚡ Faction Perk: <Text style={styles.passiveBold}>{factionConfig.passiveName}</Text>
-            </Text>
-            <Text style={styles.passiveDesc}>{factionConfig.passiveDesc}</Text>
+          <View style={styles.currencyPill}>
+            <Text style={styles.curText}>💎 {profile.gems}</Text>
           </View>
+        </View>
+      </View>
 
-          {/* Faction Switcher Tabs */}
-          <Text style={styles.switchFactionLabel}>SELECT YOUR CLAN DECK:</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.factionTabsScroll}>
-            {factionsList.map(f => {
-              const isSelected = f.id === currentFaction;
+      {/* MAIN 3-COLUMN NARAKA / TEKKEN 8 HERO CHAMBER */}
+      <ScrollView contentContainerStyle={styles.chamberContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.chamberGrid}>
+          {/* LEFT COLUMN: 4 AFRO-ASIAN WARRIOR ROSTER + RANDOM NAME GENERATOR */}
+          <View style={styles.leftRosterCol}>
+            <Text style={styles.sectionHeader}>SELECT WARRIOR (4 CLASSES)</Text>
+
+            {AFRO_ASIAN_WARRIORS.map(w => {
+              const isSelected = w.id === selectedWarrior.id;
               return (
                 <TouchableOpacity
-                  key={f.id}
-                  onPress={() => handleFactionChange(f.id)}
+                  key={w.id}
+                  activeOpacity={0.85}
+                  onPress={() => {
+                    GameStudioEngine.playSfx('button_click');
+                    onSelectWarrior(w);
+                    setActiveMotionLabel(w.motions.single_hit.name);
+                  }}
                   style={[
-                    styles.factionTabPill,
-                    isSelected && { backgroundColor: f.color, borderColor: f.accentColor, borderWidth: 1.5 },
+                    styles.rosterCard,
+                    isSelected && {
+                      borderColor: w.primaryColor,
+                      backgroundColor: 'rgba(24, 12, 28, 0.95)',
+                    },
                   ]}
                 >
-                  <Text style={styles.tabEmblem}>{f.emblem}</Text>
-                  <Text style={[styles.tabName, isSelected && styles.tabNameSelected]}>
-                    {f.name}
-                  </Text>
+                  {Platform.OS === 'web' && (
+                    <Image
+                      source={{ uri: WARRIOR_PORTRAIT_MAP[w.id] }}
+                      style={[
+                        styles.rosterThumb,
+                        isSelected && { borderColor: w.primaryColor },
+                      ]}
+                    />
+                  )}
+                  <View style={styles.rosterTextCol}>
+                    <Text
+                      numberOfLines={1}
+                      style={[styles.rosterName, isSelected && { color: '#FFF' }]}
+                    >
+                      {isSelected ? customWarriorName : w.name}
+                    </Text>
+                    <Text numberOfLines={1} style={[styles.rosterWeapon, { color: w.accentColor }]}>
+                      {w.weaponName}
+                    </Text>
+                    <Text numberOfLines={1} style={styles.rosterStyle}>
+                      {w.hp} VIT • {w.starterRelic.name}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               );
             })}
-          </ScrollView>
-        </View>
 
-        {/* 10 Kingdoms Chess Arena CTA */}
-        {onOpenChess && (
-          <TouchableOpacity
-            activeOpacity={0.85}
-            style={styles.chessArenaButton}
-            onPress={onOpenChess}
-          >
-            <View style={styles.chessArenaButtonInner}>
-              <Text style={styles.chessIconBig}>👑</Text>
-              <View style={styles.chessTextContainer}>
-                <View style={styles.chessTitleRow}>
-                  <Text style={styles.chessTitle}>10 KINGDOMS CHESS ARENA</Text>
-                  <View style={styles.newBadge}>
-                    <Text style={styles.newBadgeText}>TOP AI</Text>
-                  </View>
+            {/* Random Afro-Asian Warrior Name Generator Button */}
+            <TouchableOpacity
+              style={styles.randomizeBtn}
+              onPress={() => {
+                GameStudioEngine.playSfx('card_lift');
+                onRandomizeName();
+              }}
+            >
+              <Text style={styles.randomizeBtnText}>🎲 GENERATE AFRO-ASIAN NAME</Text>
+            </TouchableOpacity>
+
+            {/* MMR Rank Badge Plate */}
+            <View style={styles.mmrMiniCard}>
+              <View style={styles.mmrMiniHeader}>
+                <View>
+                  <Text style={styles.mmrMiniLabel}>ASCENSION MMR</Text>
+                  <Text style={styles.mmrMiniVal}>{profile.mmr} RATING</Text>
                 </View>
-                <Text style={styles.chessSub}>
-                  Ninjas • Samurais • Pirates • Animals • Sea Creatures
+                <RankBadge mmr={profile.mmr} size="small" />
+              </View>
+              <View style={styles.mmrTrack}>
+                <View style={[styles.mmrFill, { width: `${progress.percent}%` }]} />
+              </View>
+            </View>
+          </View>
+
+          {/* CENTER COLUMN: 3D-STYLE HERO SHOWCASE & LIVE MOTION ANIMATION TESTER */}
+          <View style={styles.centerShowcaseCol}>
+            <View
+              style={[
+                styles.heroShowcaseFrame,
+                { borderColor: selectedWarrior.primaryColor },
+              ]}
+            >
+              {/* High-Resolution Generated Afro-Asian Character Art */}
+              {Platform.OS === 'web' && (
+                <Image
+                  source={{ uri: WARRIOR_PORTRAIT_MAP[selectedWarrior.id] }}
+                  style={styles.heroFullPortrait}
+                  resizeMode="cover"
+                />
+              )}
+
+              {/* Live Articulated Motion Rig Overlay when testing attacks */}
+              <View style={styles.liveRigCorner}>
+                <AfroAsianFighterRigSvg
+                  warriorId={selectedWarrior.id}
+                  motionType={previewMotion}
+                  size={122}
+                />
+              </View>
+
+              {/* Bottom Hero Title & Motion Callout Overlay */}
+              <View style={styles.showcaseBottomOverlay}>
+                <Text style={[styles.showcaseHeritage, { color: selectedWarrior.accentColor }]}>
+                  {selectedWarrior.heritage.toUpperCase()}
                 </Text>
-                <Text style={styles.chessEngineTags}>
-                  Stockfish • Maia Human-AI • AlphaZero MCTS
+                <Text style={styles.showcaseHeroName}>{customWarriorName.toUpperCase()}</Text>
+                <Text style={styles.showcaseEpithet}>{selectedWarrior.title}</Text>
+
+                {/* Active Motion Preview Callout */}
+                <View style={styles.motionPreviewPill}>
+                  <Text style={styles.motionPreviewText}>⚡ {activeMotionLabel}</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* 3 INTERACTIVE MOTION CHOREOGRAPHY BUTTONS (Single-Hit / Multi-Hit / Close-Quarters) */}
+            <View style={styles.motionTesterRow}>
+              <TouchableOpacity
+                style={[styles.motionTestBtn, { borderColor: '#EF4444' }]}
+                onPress={() => triggerPreviewMotion('single_hit')}
+              >
+                <Text style={styles.motionTestTag}>SINGLE-HIT CLEAVE</Text>
+                <Text numberOfLines={1} style={styles.motionTestName}>
+                  {selectedWarrior.motions.single_hit.name}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.motionTestBtn, { borderColor: '#C084FC' }]}
+                onPress={() => triggerPreviewMotion('multi_hit')}
+              >
+                <Text style={[styles.motionTestTag, { color: '#C084FC' }]}>
+                  MULTI-HIT ({selectedWarrior.motions.multi_hit.hitCount}x)
+                </Text>
+                <Text numberOfLines={1} style={styles.motionTestName}>
+                  {selectedWarrior.motions.multi_hit.name}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.motionTestBtn, { borderColor: '#F59E0B' }]}
+                onPress={() => triggerPreviewMotion('close_quarters')}
+              >
+                <Text style={[styles.motionTestTag, { color: '#F59E0B' }]}>
+                  CLOSE-QUARTERS
+                </Text>
+                <Text numberOfLines={1} style={styles.motionTestName}>
+                  {selectedWarrior.motions.close_quarters.name}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* RIGHT COLUMN: WEAPON LORE, COMBAT SPEC & LAUNCH SPIRE EXPEDITION */}
+          <View style={styles.rightDetailsCol}>
+            <View style={styles.inspectorCard}>
+              <Text style={styles.inspectorHeader}>ARMAMENT & MARTIAL DOCTRINE</Text>
+              <Text style={[styles.weaponTitle, { color: selectedWarrior.accentColor }]}>
+                ⚔️ {selectedWarrior.weaponName}
+              </Text>
+              <Text style={styles.weaponDesc}>{selectedWarrior.weaponDescription}</Text>
+
+              <View style={styles.divider} />
+
+              <Text style={styles.inspectorHeader}>ANCESTRAL RELIC</Text>
+              <View style={styles.relicRow}>
+                <Text style={styles.relicIcon}>{selectedWarrior.starterRelic.icon}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.relicName}>{selectedWarrior.starterRelic.name}</Text>
+                  <Text style={styles.relicDesc}>{selectedWarrior.starterRelic.description}</Text>
+                </View>
+              </View>
+
+              <View style={styles.divider} />
+
+              <Text style={styles.inspectorHeader}>WARRIOR CHRONICLE</Text>
+              <Text style={styles.loreParagraph}>{selectedWarrior.lore}</Text>
+
+              <View style={styles.motionBreakdownBox}>
+                <Text style={styles.motionBreakdownTitle}>3-STANCE MOTION SYSTEM:</Text>
+                <Text style={styles.motionBullet}>
+                  • <Text style={{ color: '#FDA4AF', fontWeight: '800' }}>Single-Hit:</Text>{' '}
+                  {selectedWarrior.motions.single_hit.description}
+                </Text>
+                <Text style={styles.motionBullet}>
+                  • <Text style={{ color: '#D8B4FE', fontWeight: '800' }}>Multi-Hit:</Text>{' '}
+                  {selectedWarrior.motions.multi_hit.description}
+                </Text>
+                <Text style={styles.motionBullet}>
+                  • <Text style={{ color: '#FDE047', fontWeight: '800' }}>Close-Quarters:</Text>{' '}
+                  {selectedWarrior.motions.close_quarters.description}
                 </Text>
               </View>
-              <Text style={styles.chessArrow}>›</Text>
             </View>
-          </TouchableOpacity>
-        )}
 
-        {/* Main Ranked Duel CTA */}
-        <TouchableOpacity
-          activeOpacity={0.85}
-          style={[styles.playButton, { backgroundColor: factionConfig.color }]}
-          onPress={onFindMatch}
-        >
-          <View style={styles.playButtonInner}>
-            <GlyphIcon name="duel" size={28} style={styles.playIcon} />
-            <View style={styles.playTextContainer}>
-              <Text style={styles.playTitle}>COMMENCE GWENT DUEL</Text>
-              <Text style={styles.playSub}>Best 2-of-3 • 1v1 Elo Matchmaking</Text>
-            </View>
-            <GlyphIcon name="arrow" size={18} color="#FFFFFF" style={styles.playArrow} />
+            {/* PRIMARY LAUNCH CTA (NARAKA CRIMSON-GOLD BUTTON) */}
+            <TouchableOpacity
+              activeOpacity={0.88}
+              style={styles.launchSpireBtn}
+              onPress={() => {
+                GameStudioEngine.playSfx('power_surge');
+                onStartSpireRun();
+              }}
+            >
+              <Text style={styles.launchSpireTitle}>⚔️ ENTER THE CRIMSON SPIRE</Text>
+              <Text style={styles.launchSpireSub}>
+                Deploy as {customWarriorName} • 15 Pagoda Floors • Full Motion Combat
+              </Text>
+            </TouchableOpacity>
+
+            {/* WITCHER GWENT ARENA LAUNCH CTA */}
+            <TouchableOpacity
+              activeOpacity={0.88}
+              style={styles.launchGwentBtn}
+              onPress={() => {
+                GameStudioEngine.playSfx('power_surge');
+                onOpenGwent();
+              }}
+            >
+              <Text style={styles.launchGwentTitle}>🃏 ENTER WITCHER GWENT ARENA</Text>
+              <Text style={styles.launchGwentSub}>
+                10 Ryu Hayabusa Character Replicas • 3 Rows • Best-of-3 Tactics
+              </Text>
+            </TouchableOpacity>
           </View>
-        </TouchableOpacity>
-
-        {/* Navigation Grid */}
-        <View style={styles.navGrid}>
-          <TouchableOpacity style={styles.navCard} onPress={onOpenDeck}>
-            <GlyphIcon name="deck" size={22} style={styles.navIcon} />
-            <Text style={styles.navTitle}>Deck Builder</Text>
-            <Text style={styles.navDesc}>Edit Faction Deck</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.navCard} onPress={onOpenLeaderboard}>
-            <GlyphIcon name="leaderboard" size={22} style={styles.navIcon} />
-            <Text style={styles.navTitle}>Leaderboard</Text>
-            <Text style={styles.navDesc}>Global Shogun Rank</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.navCard} onPress={onOpenShop}>
-            <GlyphIcon name="shop" size={22} style={styles.navIcon} />
-            <Text style={styles.navTitle}>Merchant</Text>
-            <Text style={styles.navDesc}>Packs & Crates</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.navCard} onPress={onOpenBattlePass}>
-            <GlyphIcon name="pass" size={22} style={styles.navIcon} />
-            <Text style={styles.navTitle}>Bushido Pass</Text>
-            <Text style={styles.navDesc}>Season Rewards</Text>
-          </TouchableOpacity>
         </View>
       </ScrollView>
     </View>
@@ -222,353 +385,438 @@ export const LobbyScreen: React.FC<Props> = ({
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#0C0A09',
+    backgroundColor: '#07050A',
   },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 32,
+  bgBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+    opacity: 0.28,
   },
-  topBar: {
+  darkVignette: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(7, 5, 12, 0.65)',
+  },
+  narakaTopNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(11, 8, 18, 0.94)',
+    borderBottomWidth: 1,
+    borderBottomColor: '#4C1D95',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  brandBlock: {
+    marginRight: 10,
+  },
+  brandKagura: {
+    color: '#F43F5E',
+    fontSize: 13.5,
+    fontWeight: '900',
+    letterSpacing: 1.2,
+  },
+  brandSub: {
+    color: '#A1A1AA',
+    fontSize: 8,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+  },
+  navTabsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  navTab: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 4,
+  },
+  navTabActive: {
+    backgroundColor: '#7C3AED',
+  },
+  navTabText: {
+    color: '#D4D4D8',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+  },
+  navTabTextActive: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.6,
+  },
+  currencyCluster: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  audioPill: {
+    backgroundColor: '#18181B',
+    borderWidth: 1,
+    borderColor: '#3F3F46',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  audioPillActive: {
+    borderColor: '#F43F5E',
+    backgroundColor: 'rgba(244, 63, 94, 0.18)',
+  },
+  audioPillText: {
+    color: '#F4F4F5',
+    fontSize: 9,
+    fontWeight: '800',
+  },
+  currencyPill: {
+    backgroundColor: '#18181B',
+    borderWidth: 1,
+    borderColor: '#3F3F46',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  curText: {
+    color: '#FBBF24',
+    fontSize: 10,
+    fontWeight: '900',
+  },
+  chamberContent: {
+    padding: 14,
+  },
+  chamberGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 14,
+    justifyContent: 'space-between',
+  },
+  leftRosterCol: {
+    flexGrow: 1,
+    flexBasis: 250,
+    maxWidth: 320,
+    gap: 8,
+  },
+  sectionHeader: {
+    color: '#E4E4E7',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1,
+    marginBottom: 2,
+  },
+  rosterCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(17, 14, 24, 0.88)',
+    borderRadius: 8,
+    padding: 8,
+    borderWidth: 1.5,
+    borderColor: '#27272A',
+  },
+  rosterThumb: {
+    width: 48,
+    height: 48,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: '#3F3F46',
+    marginRight: 10,
+  },
+  rosterTextCol: {
+    flex: 1,
+  },
+  rosterName: {
+    color: '#E4E4E7',
+    fontSize: 12.5,
+    fontWeight: '900',
+  },
+  rosterWeapon: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    marginTop: 1,
+  },
+  rosterStyle: {
+    color: '#A1A1AA',
+    fontSize: 8.5,
+    marginTop: 2,
+  },
+  randomizeBtn: {
+    backgroundColor: '#27272A',
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+    borderRadius: 8,
+    paddingVertical: 9,
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  randomizeBtnText: {
+    color: '#FDE047',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.6,
+  },
+  mmrMiniCard: {
+    backgroundColor: 'rgba(17, 14, 24, 0.88)',
+    borderRadius: 8,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#27272A',
+    marginTop: 4,
+  },
+  mmrMiniHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
-    paddingVertical: 4,
+    marginBottom: 6,
   },
-  appTitle: {
-    color: '#F59E0B',
-    fontSize: 16,
+  mmrMiniLabel: {
+    color: '#A1A1AA',
+    fontSize: 8.5,
+    fontWeight: '800',
+  },
+  mmrMiniVal: {
+    color: '#F4F4F5',
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  mmrTrack: {
+    height: 6,
+    backgroundColor: '#090D16',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  mmrFill: {
+    height: '100%',
+    backgroundColor: '#F43F5E',
+  },
+  centerShowcaseCol: {
+    flexGrow: 2,
+    flexBasis: 340,
+    alignItems: 'center',
+  },
+  heroShowcaseFrame: {
+    width: '100%',
+    height: 350,
+    borderRadius: 12,
+    borderWidth: 2,
+    backgroundColor: '#09060E',
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+  },
+  heroFullPortrait: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+  },
+  liveRigCorner: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: 'rgba(9, 6, 14, 0.78)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+    padding: 4,
+  },
+  showcaseBottomOverlay: {
+    backgroundColor: 'rgba(9, 6, 14, 0.86)',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.12)',
+  },
+  showcaseHeritage: {
+    fontSize: 9,
     fontWeight: '900',
     letterSpacing: 1,
   },
-  appSubtitle: {
-    color: '#A8A29E',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  currencies: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  currencyPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#18181B',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-    marginLeft: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.12)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  curGlyph: {
-    marginRight: 5,
-  },
-  curAmount: {
-    color: '#F9FAFB',
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  profileCard: {
-    backgroundColor: '#18181B',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.10)',
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.10,
-    shadowRadius: 12,
-    elevation: 3,
-  },
-  profileHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  playerName: {
-    color: '#F9FAFB',
-    fontSize: 18,
+  showcaseHeroName: {
+    color: '#FFFFFF',
+    fontSize: 22,
     fontWeight: '900',
+    letterSpacing: 1,
   },
-  statsSummary: {
-    color: '#A8A29E',
-    fontSize: 12,
-    marginTop: 2,
-  },
-  progressContainer: {
-    marginTop: 6,
-  },
-  progressLabelRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  progressLabel: {
-    color: '#D6D3D1',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  progressPercent: {
-    color: '#38BDF8',
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  progressBarTrack: {
-    height: 8,
-    backgroundColor: '#27272A',
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: '#38BDF8',
-    borderRadius: 4,
-  },
-  nextTierTarget: {
-    color: '#78716C',
-    fontSize: 10,
-    marginTop: 6,
-    textAlign: 'right',
-  },
-  streakBanner: {
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
-    borderWidth: 1,
-    borderColor: '#EF4444',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 6,
-    marginTop: 12,
-    alignItems: 'center',
-  },
-  streakText: {
-    color: '#FCA5A5',
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  factionShowcaseCard: {
-    backgroundColor: '#18181B',
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1.5,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.10,
-    shadowRadius: 12,
-    elevation: 3,
-  },
-  factionCardTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  factionKanji: {
-    fontSize: 34,
-    color: '#D97706',
-    fontWeight: '900',
-    marginRight: 10,
-  },
-  factionTextGroup: {
-    flex: 1,
-  },
-  factionName: {
-    fontSize: 17,
-    fontWeight: '900',
-  },
-  factionTagline: {
-    color: '#A8A29E',
-    fontSize: 11,
-    marginTop: 2,
-  },
-  factionPassiveBox: {
-    backgroundColor: '#27272A',
-    padding: 10,
-    borderRadius: 6,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  passiveTitle: {
-    color: '#FEF08A',
-    fontSize: 12,
-  },
-  passiveBold: {
-    fontWeight: '900',
-  },
-  passiveDesc: {
-    color: '#D6D3D1',
-    fontSize: 11,
-    marginTop: 2,
-    lineHeight: 14,
-  },
-  switchFactionLabel: {
-    color: '#78716C',
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-    marginBottom: 6,
-  },
-  factionTabsScroll: {
-    flexDirection: 'row',
-  },
-  factionTabPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#27272A',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    marginRight: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.10)',
-  },
-  tabEmblem: {
-    fontSize: 14,
-    marginRight: 4,
-  },
-  tabName: {
-    color: '#A8A29E',
+  showcaseEpithet: {
+    color: '#D4D4D8',
     fontSize: 11,
     fontWeight: '700',
+    marginBottom: 6,
   },
-  chessArenaButton: {
-    backgroundColor: '#1E1B4B',
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 14,
-    borderWidth: 2,
-    borderColor: '#6366F1',
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 5,
+  motionPreviewPill: {
+    backgroundColor: 'rgba(244, 63, 94, 0.2)',
+    borderWidth: 1,
+    borderColor: '#F43F5E',
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    alignSelf: 'flex-start',
   },
-  chessArenaButtonInner: {
+  motionPreviewText: {
+    color: '#FFE4E6',
+    fontSize: 10,
+    fontWeight: '900',
+  },
+  motionTesterRow: {
     flexDirection: 'row',
+    width: '100%',
+    gap: 8,
+    marginTop: 10,
+  },
+  motionTestBtn: {
+    flex: 1,
+    backgroundColor: 'rgba(17, 14, 24, 0.94)',
+    borderRadius: 8,
+    borderWidth: 1.5,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
     alignItems: 'center',
   },
-  chessIconBig: {
-    fontSize: 32,
-    marginRight: 12,
+  motionTestTag: {
+    color: '#FDA4AF',
+    fontSize: 8.5,
+    fontWeight: '900',
+    letterSpacing: 0.5,
   },
-  chessTextContainer: {
-    flex: 1,
+  motionTestName: {
+    color: '#F4F4F5',
+    fontSize: 9.5,
+    fontWeight: '700',
+    marginTop: 2,
   },
-  chessTitleRow: {
+  rightDetailsCol: {
+    flexGrow: 1,
+    flexBasis: 280,
+    maxWidth: 360,
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  inspectorCard: {
+    backgroundColor: 'rgba(17, 14, 24, 0.92)',
+    borderRadius: 10,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#27272A',
+  },
+  inspectorHeader: {
+    color: '#A1A1AA',
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  weaponTitle: {
+    fontSize: 13.5,
+    fontWeight: '900',
+    marginBottom: 4,
+  },
+  weaponDesc: {
+    color: '#D4D4D8',
+    fontSize: 10.5,
+    lineHeight: 15,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#27272A',
+    marginVertical: 10,
+  },
+  relicRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  chessTitle: {
-    color: '#FFFFFF',
-    fontSize: 16,
+  relicIcon: {
+    fontSize: 22,
+  },
+  relicName: {
+    color: '#FDE047',
+    fontSize: 11.5,
     fontWeight: '900',
-    letterSpacing: 0.6,
   },
-  newBadge: {
-    backgroundColor: '#6366F1',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+  relicDesc: {
+    color: '#D4D4D8',
+    fontSize: 10,
   },
-  newBadgeText: {
-    color: '#FFFFFF',
+  loreParagraph: {
+    color: '#A1A1AA',
+    fontSize: 10.5,
+    lineHeight: 15,
+    fontStyle: 'italic',
+    marginBottom: 10,
+  },
+  motionBreakdownBox: {
+    backgroundColor: '#09060E',
+    borderRadius: 8,
+    padding: 8,
+    borderWidth: 1,
+    borderColor: '#27272A',
+    gap: 4,
+  },
+  motionBreakdownTitle: {
+    color: '#F59E0B',
     fontSize: 9,
     fontWeight: '900',
+    marginBottom: 2,
   },
-  chessSub: {
-    color: '#CBD5E1',
-    fontSize: 11,
-    marginTop: 2,
-    fontWeight: '600',
+  motionBullet: {
+    color: '#D4D4D8',
+    fontSize: 9.5,
+    lineHeight: 13.5,
   },
-  chessEngineTags: {
-    color: '#818CF8',
-    fontSize: 10,
-    marginTop: 2,
-    fontWeight: '700',
-  },
-  chessArrow: {
-    color: '#A5B4FC',
-    fontSize: 24,
-    fontWeight: '800',
-    marginLeft: 6,
-  },
-  playButton: {
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  playButtonInner: {
-    flexDirection: 'row',
+  launchSpireBtn: {
+    backgroundColor: '#BE123C',
+    borderRadius: 10,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderWidth: 2,
+    borderColor: '#FBBF24',
     alignItems: 'center',
   },
-  playIcon: {
-    marginRight: 14,
-  },
-  playTextContainer: {
-    flex: 1,
-  },
-  playTitle: {
+  launchSpireTitle: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '900',
-    letterSpacing: 0.5,
+    letterSpacing: 1,
   },
-  playSub: {
-    color: 'rgba(255,255,255,0.85)',
-    fontSize: 12,
-    marginTop: 2,
+  launchSpireSub: {
+    color: '#FFE4E6',
+    fontSize: 9.5,
+    fontWeight: '700',
+    marginTop: 3,
   },
-  playArrow: {
-    marginLeft: 8,
+  launchGwentBtn: {
+    backgroundColor: '#78350F',
+    borderRadius: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderWidth: 2,
+    borderColor: '#F59E0B',
+    alignItems: 'center',
+    marginTop: 10,
   },
-  navGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  navCard: {
-    width: '48%',
-    backgroundColor: '#18181B',
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.10)',
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  navIcon: {
-    marginBottom: 8,
-    alignSelf: 'flex-start',
-  },
-  navTitle: {
-    color: '#F9FAFB',
+  launchGwentTitle: {
+    color: '#FEF3C7',
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: '900',
+    letterSpacing: 1,
   },
-  navDesc: {
-    color: '#78716C',
-    fontSize: 11,
-    marginTop: 2,
+  launchGwentSub: {
+    color: '#FDE68A',
+    fontSize: 9,
+    fontWeight: '700',
+    marginTop: 3,
   },
 });

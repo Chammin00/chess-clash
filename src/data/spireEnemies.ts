@@ -3,8 +3,8 @@ import { SpireEnemy } from '../types/spire';
 export function createAstralZealot(): SpireEnemy {
   return {
     id: 'zealot_' + Math.random().toString(36).substring(2, 6),
-    name: 'Astral Rift-Crow',
-    title: 'Acolyte of the Singularity',
+    name: 'Karasu Tengu Zealot',
+    title: 'Blood-Moon Shrine Acolyte',
     hp: 50,
     maxHp: 50,
     block: 0,
@@ -40,8 +40,8 @@ export function createAstralZealot(): SpireEnemy {
 export function createChitinLeviathan(): SpireEnemy {
   return {
     id: 'leviathan_' + Math.random().toString(36).substring(2, 6),
-    name: 'Chitin Dredger',
-    title: 'Subterranean Carapace',
+    name: 'Armored Oni Juggernaut',
+    title: 'Obsidian Pagoda Sentinel',
     hp: 44,
     maxHp: 44,
     block: 0,
@@ -89,8 +89,8 @@ export function createSparkArachnid(): SpireEnemy {
   const hp = Math.floor(Math.random() * 5) + 14;
   return {
     id: 'arachnid_' + Math.random().toString(36).substring(2, 6),
-    name: 'Spark Arachnid',
-    title: 'Neurotoxin Weaver',
+    name: 'Jorogumo Shadow-Weaver',
+    title: 'Silk-Venom Yokai',
     hp,
     maxHp: hp,
     block: 0,

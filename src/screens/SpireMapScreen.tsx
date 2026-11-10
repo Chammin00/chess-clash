@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { MapNode, SpireRunState } from '../types/spire';
+import { SpireMapNodeVector } from '../components/SpireVectorArt';
+import { GameStudioEngine } from '../services/gameStudioEngine';
 
 interface Props {
   runState: SpireRunState;
@@ -97,7 +99,10 @@ export const SpireMapScreen: React.FC<Props> = ({
                     <TouchableOpacity
                       key={node.id}
                       disabled={!isAccessible}
-                      onPress={() => onSelectNode(node)}
+                      onPress={() => {
+                        GameStudioEngine.playSfx('button_click');
+                        onSelectNode(node);
+                      }}
                       style={[
                         styles.nodeBtn,
                         node.visited && styles.nodeVisited,
@@ -105,7 +110,11 @@ export const SpireMapScreen: React.FC<Props> = ({
                         isAccessible && styles.nodeAccessible,
                       ]}
                     >
-                      <Text style={styles.nodeIcon}>{getNodeIcon(node.type)}</Text>
+                      <SpireMapNodeVector
+                        type={node.type}
+                        size={24}
+                        active={isAccessible || isCurrent}
+                      />
                       <Text style={styles.nodeLabel}>{getNodeTitle(node.type)}</Text>
                       {isAccessible && <View style={styles.pulseIndicator} />}
                     </TouchableOpacity>

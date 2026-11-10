@@ -1,4 +1,14 @@
-export type RankTier = 'Bronze' | 'Silver' | 'Gold' | 'Platinum' | 'Diamond' | 'Master' | 'Grandmaster';
+export type RankTier = 
+  | 'Bronze'
+  | 'Silver'
+  | 'Gold'
+  | 'Platinum'
+  | 'Diamond'
+  | 'Champion'
+  | 'Legend'
+  | 'Master'
+  | 'Grandmaster'
+  | 'Sage';
 
 export interface TierInfo {
   tier: RankTier;
@@ -21,9 +31,8 @@ export interface PlayerProfile {
   gems: number;
   unlockedCardIds: string[];
   deckCardIds: string[];
-  selectedFaction?: import('./card').FactionId;
-  factionDecks?: Record<string, string[]>;
   createdAt: number;
+  lastPlayedAt?: number;
   hasNoAds?: boolean;
   isVip?: boolean;
   vipExpiresAt?: number;

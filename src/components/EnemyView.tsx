@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Animated, TouchableOpacity } from 'react-native';
 import { SpireEnemy, SpireHero, FloatingText, StatusEffect } from '../types/spire';
 import { SpireCombatEngine } from '../services/spireCombatEngine';
+import { SpireEnemyVectorArt } from './SpireVectorArt';
 
 interface Props {
   enemy: SpireEnemy;
@@ -143,9 +144,14 @@ export const EnemyView: React.FC<Props> = ({
         {enemy.intent.description}
       </Text>
 
-      {/* Enemy Sprite & Holo Ring */}
+      {/* Handcrafted SVG Vector Enemy Silhouette & Holo Ring */}
       <View style={[styles.spriteBox, { borderColor: enemy.themeColor }]}>
-        <Text style={styles.sprite}>{enemy.spriteIcon}</Text>
+        <SpireEnemyVectorArt
+          enemyId={enemy.id}
+          size={68}
+          isBoss={enemy.title.includes('Boss')}
+          isElite={enemy.title.includes('Elite')}
+        />
         {enemy.block > 0 && (
           <View style={styles.blockShield}>
             <Text style={styles.shieldIcon}>🛡️</Text>
@@ -224,13 +230,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#0F172A',
     paddingHorizontal: 12,
     paddingVertical: 5,
-    borderRadius: 8,
+    borderRadius: 14,
     borderWidth: 1.5,
     marginBottom: 4,
-    elevation: 2,
+    elevation: 6,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.18,
-    shadowRadius: 6,
+    shadowOpacity: 0.6,
+    shadowRadius: 4,
   },
   intentIcon: {
     fontSize: 16,
@@ -252,15 +258,15 @@ const styles = StyleSheet.create({
     width: 90,
     height: 90,
     borderRadius: 45,
-    backgroundColor: '#18181B',
-    borderWidth: 1.5,
+    backgroundColor: 'rgba(15, 23, 42, 0.85)',
+    borderWidth: 2,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 5,
-    elevation: 3,
+    elevation: 8,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
   },
   sprite: {
     fontSize: 48,

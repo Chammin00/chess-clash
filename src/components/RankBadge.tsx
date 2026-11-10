@@ -24,7 +24,7 @@ export const RankBadge: React.FC<Props> = ({ mmr, size = 'medium', showMmrText =
       </View>
       <View style={styles.textContainer}>
         <Text style={[styles.tierName, { color: tierInfo.badgeColor }, isSmall && styles.textSmall]}>
-          {tierInfo.tier} {tierInfo.tier !== 'Grandmaster' && tierInfo.tier !== 'Master' ? roman : ''}
+          {tierInfo.tier} {tierInfo.tier !== 'Sage' && tierInfo.tier !== 'Grandmaster' && tierInfo.tier !== 'Master' ? roman : ''}
         </Text>
         {showMmrText && (
           <Text style={[styles.mmrText, isSmall && styles.mmrTextSmall]}>
@@ -40,27 +40,22 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#18181B',
-    borderRadius: 10,
-    paddingHorizontal: 10,
+    backgroundColor: 'rgba(26, 32, 44, 0.85)',
+    borderRadius: 20,
+    paddingHorizontal: 12,
     paddingVertical: 6,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.12)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.10,
-    shadowRadius: 6,
-    elevation: 2,
+    borderColor: '#4A5568',
   },
   containerSmall: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: 14,
   },
   containerLarge: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 24,
   },
   badgeCircle: {
     width: 34,

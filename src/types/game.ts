@@ -1,41 +1,24 @@
-import { BoardUnit, Card, FactionId } from './card';
+import { BoardUnit, Card } from './card';
 
-export interface WeatherState {
-  frost: boolean; // Affects both players' melee rows -> non-heroes reduced to 1
-  fog: boolean;   // Affects both players' ranged rows -> non-heroes reduced to 1
-  rain: boolean;  // Affects both players' siege rows -> non-heroes reduced to 1
-}
-
-export interface PlayerGwentState {
+export interface PlayerBattleState {
   id: string;
   name: string;
   mmr: number;
-  faction: FactionId;
-  lives: number; // Crowns / life gems (starts at 2)
-  hasPassed: boolean;
+  hp: number;
+  maxHp: number;
+  currentMana: number;
+  maxMana: number;
   hand: Card[];
   deck: Card[];
-  graveyard: Card[];
-  meleeRow: BoardUnit[];
-  rangedRow: BoardUnit[];
-  siegeRow: BoardUnit[];
-  hasMeleeHorn: boolean;
-  hasRangedHorn: boolean;
-  hasSiegeHorn: boolean;
-  leader: Card;
-  hasUsedLeader: boolean;
+  board: BoardUnit[];
   isBot?: boolean;
 }
 
 export type BattlePhase = 
   | 'starting'
-  | 'mulligan'
   | 'player_turn'
   | 'opponent_turn'
-  | 'medic_revive'
-  | 'decoy_target'
-  | 'agile_select'
-  | 'round_end'
+  | 'resolving'
   | 'victory'
   | 'defeat';
 
@@ -47,26 +30,20 @@ export interface CombatLogEntry {
   actor: 'player' | 'opponent';
 }
 
-export interface RoundScoreRecord {
-  round: number;
-  playerScore: number;
-  opponentScore: number;
-  winner: 'player' | 'opponent' | 'tie';
-}
+import { RankTier } from './mmr';
 
 export interface MatchResultData {
-  winner: 'player' | 'opponent' | 'tie';
+  winner: 'player' | 'opponent';
   oldMmr: number;
   newMmr: number;
   mmrDelta: number;
-  roundsPlayed: number;
-  roundScores: RoundScoreRecord[];
+  decayApplied?: number;
+  rankChange?: 'promoted' | 'demoted' | 'none';
+  oldTier?: RankTier;
+  newTier?: RankTier;
+  tierStepDelta?: number;
+  turnsPlayed: number;
   goldEarned: number;
   xpEarned: number;
   streakBonus: boolean;
-  playerFaction: FactionId;
-  opponentFaction: FactionId;
 }
-
-// Backward compatibility alias for components
-export type PlayerBattleState = PlayerGwentState;

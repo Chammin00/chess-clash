@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { SpireHero } from '../types/spire';
 import { getStatusMetadata } from './EnemyView';
+import { SpireHeroVectorCrest } from './SpireVectorArt';
 
 interface Props {
   hero: SpireHero;
@@ -73,8 +74,13 @@ export const SpireHeroView: React.FC<Props> = ({ hero, onUsePotion, onInspectRel
         </View>
       </View>
 
-      {/* Main Hero HUD: Energy Core + Vitality + Barrier */}
+      {/* Main Hero HUD: Vector Crest + Energy Core + Vitality + Barrier */}
       <View style={styles.heroMainRow}>
+        {/* Handcrafted Vanguard Vector Crest */}
+        <View style={{ marginRight: 8 }}>
+          <SpireHeroVectorCrest size={48} />
+        </View>
+
         {/* Pulsing Aether Energy Core */}
         <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
           <View style={styles.energyOrb}>
@@ -232,9 +238,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
-    elevation: 4,
+    elevation: 8,
     shadowColor: '#00F0FF',
-    shadowOpacity: 0.28,
+    shadowOpacity: 0.6,
     shadowRadius: 10,
   },
   energyNumber: {

@@ -38,12 +38,12 @@ export const ManaBar: React.FC<Props> = ({ currentMana, maxMana, label }) => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#18181B',
+    backgroundColor: 'rgba(23, 25, 35, 0.75)',
     borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.10)',
+    borderColor: '#2D3748',
   },
   headerRow: {
     flexDirection: 'row',

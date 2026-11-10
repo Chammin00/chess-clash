@@ -12,8 +12,6 @@ import { DailyDealItem, CrateOpeningResult } from '../types/monetization';
 import { IAP_PRODUCTS, CRATE_CONFIGS, INITIAL_DAILY_DEALS } from '../config/monetization';
 import { MonetizationService } from '../services/monetizationService';
 import { CrateOpeningModal } from '../components/CrateOpeningModal';
-import { GlyphIcon } from '../components/GlyphIcon';
-import { DesignTokens } from '../theme/designSystem';
 
 interface Props {
   profile: PlayerProfile;
@@ -110,11 +108,11 @@ export const ShopScreen: React.FC<Props> = ({
         <Text style={styles.title}>EMPORIUM & TREASURY</Text>
         <View style={styles.currencies}>
           <View style={styles.currencyPill}>
-            <GlyphIcon name="gold" size={13} style={styles.curGlyph} />
+            <Text style={styles.curIcon}>🪙</Text>
             <Text style={styles.curAmount}>{profile.gold}</Text>
           </View>
           <View style={styles.currencyPill}>
-            <GlyphIcon name="gem" size={13} style={styles.curGlyph} />
+            <Text style={styles.curIcon}>💎</Text>
             <Text style={styles.curAmount}>{profile.gems}</Text>
           </View>
         </View>
@@ -130,12 +128,12 @@ export const ShopScreen: React.FC<Props> = ({
           >
             <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
               {tab === 'deals'
-                ? 'DEALS'
+                ? '⚡ DEALS'
                 : tab === 'gems'
-                ? 'GEMS'
+                ? '💎 GEMS'
                 : tab === 'crates'
-                ? 'CRATES'
-                : 'FREE PACK'}
+                ? '📦 CRATES'
+                : '🎁 SUPPLY'}
             </Text>
           </TouchableOpacity>
         ))}
@@ -240,25 +238,25 @@ export const ShopScreen: React.FC<Props> = ({
         {/* TAB 2: IN-APP PURCHASES (GEMS & PERMANENT PERKS) */}
         {activeTab === 'gems' && (
           <>
-            {/* Grandmaster Supporter Club */}
+            {/* Founder Supporter Pass */}
             <View style={styles.vipPassCard}>
               <View style={styles.vipTag}>
                 <Text style={styles.vipTagText}>
-                  SUPPORTER EDITION
+                  {profile.hasNoAds ? 'ACTIVE' : 'BEST SELLER'}
                 </Text>
               </View>
               <Text style={styles.vipPassIcon}>🛡️</Text>
-              <Text style={styles.vipPassTitle}>Grandmaster Supporter Club</Text>
+              <Text style={styles.vipPassTitle}>Founder Vanguard Supporter Pass</Text>
               <Text style={styles.vipPassDesc}>
-                Unlock all 10 Kingdom custom vector heraldries, exclusive gold board trims, and offline local battle modes. Pure premium experience forever.
+                Permanently unlocks Founder Vanguard crest and grants enhanced daily supply caches!
               </Text>
               <TouchableOpacity
                 disabled={profile.hasNoAds || isProcessing}
                 style={[styles.buyVipBtn, profile.hasNoAds && styles.buyVipBtnOwned]}
-                onPress={() => handleBuyProduct('com.aether.supporter_club')}
+                onPress={() => handleBuyProduct('com.aether.founder_supporter_pass')}
               >
                 <Text style={styles.buyVipBtnText}>
-                  {profile.hasNoAds ? '✓ SUPPORTER UNLOCKED' : 'JOIN SUPPORTER CLUB ($4.99)'}
+                  {profile.hasNoAds ? '✓ OWNED FOREVER' : 'UNLOCK FOUNDER PASS ($4.99)'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -351,23 +349,23 @@ export const ShopScreen: React.FC<Props> = ({
           </>
         )}
 
-        {/* TAB 4: FREE REWARDED AD */}
+        {/* TAB 4: DAILY VANGUARD SUPPLY DROP */}
         {activeTab === 'free' && (
           <View style={styles.featuredCard}>
             <View style={styles.featuredTag}>
               <Text style={styles.featuredTagText}>
-                DAILY LOGIN REWARD
+                {profile.hasNoAds ? 'FOUNDER SUPPLY DROP' : 'VANGUARD REQUISITION'}
               </Text>
             </View>
             <Text style={styles.packIcon}>🎁</Text>
-            <Text style={styles.packTitle}>Tactician Daily Supply</Text>
+            <Text style={styles.packTitle}>Daily Tactical Requisition Cache</Text>
             <Text style={styles.packDesc}>
-              Claim your daily loyalty ration: +150 Gold, 15 Gems, and tactical draft voucher. No ads or video requirements.
+              Claim your Citadel Vanguard supply drop to receive +150 Credits and +15 Radiant Gems for your next ascent!
             </Text>
 
             <TouchableOpacity style={styles.watchAdBtn} onPress={onWatchAdForPack}>
               <Text style={styles.watchAdText}>
-                CLAIM DAILY REWARD
+                ⚡ CLAIM DAILY SUPPLY CACHE (+150 GOLD / +15 GEMS)
               </Text>
             </TouchableOpacity>
           </View>
@@ -419,19 +417,13 @@ const styles = StyleSheet.create({
   currencyPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#18181B',
-    borderRadius: 8,
+    backgroundColor: '#1E293B',
+    borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.12)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
   },
-  curGlyph: {
+  curIcon: {
+    fontSize: 11,
     marginRight: 4,
   },
   curAmount: {
@@ -469,20 +461,15 @@ const styles = StyleSheet.create({
   },
   starterCard: {
     backgroundColor: '#1E1B4B',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 18,
     alignItems: 'center',
-    borderWidth: 1.5,
+    borderWidth: 2,
     borderColor: '#F59E0B',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    elevation: 3,
   },
   starterTag: {
     backgroundColor: '#F59E0B',
-    borderRadius: 4,
+    borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 3,
     marginBottom: 8,
@@ -517,11 +504,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     width: '100%',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    elevation: 3,
   },
   buyStarterBtnText: {
     color: '#FFF',
@@ -530,16 +512,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   piggyCard: {
-    backgroundColor: '#18181B',
-    borderRadius: 12,
+    backgroundColor: '#1E293B',
+    borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.10)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.10,
-    shadowRadius: 12,
-    elevation: 3,
+    borderColor: '#334155',
   },
   piggyHeader: {
     flexDirection: 'row',
@@ -597,16 +574,11 @@ const styles = StyleSheet.create({
   dealCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#18181B',
+    backgroundColor: '#1E293B',
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.10)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 2,
+    borderColor: '#334155',
   },
   dealIcon: {
     fontSize: 26,
@@ -631,11 +603,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
   },
   buyDealBtnText: {
     color: '#FFF',
@@ -647,15 +614,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#262214',
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 16,
     borderWidth: 1.5,
     borderColor: '#EAB308',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.10,
-    shadowRadius: 10,
-    elevation: 3,
   },
   bpCtaTitle: {
     color: '#FEF08A',
@@ -673,17 +635,12 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   vipPassCard: {
-    backgroundColor: '#18181B',
-    borderRadius: 12,
+    backgroundColor: '#1E293B',
+    borderRadius: 16,
     padding: 18,
     alignItems: 'center',
     borderWidth: 1.5,
     borderColor: '#38BDF8',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    elevation: 3,
   },
   vipTag: {
     backgroundColor: '#0284C7',
@@ -721,11 +678,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     width: '100%',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    elevation: 3,
   },
   buyVipBtnOwned: {
     backgroundColor: '#064E3B',
@@ -738,16 +690,11 @@ const styles = StyleSheet.create({
   monthlyVipCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#18181B',
+    backgroundColor: '#1E293B',
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
     borderColor: '#713F12',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 2,
   },
   monthlyVipIcon: {
     fontSize: 26,
@@ -771,11 +718,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
   },
   monthlyVipBtnText: {
     color: '#0F172A',
@@ -789,17 +731,12 @@ const styles = StyleSheet.create({
   },
   gemCard: {
     width: '48%',
-    backgroundColor: '#18181B',
-    borderRadius: 12,
+    backgroundColor: '#1E293B',
+    borderRadius: 14,
     padding: 14,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.10)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 2,
+    borderColor: '#334155',
   },
   gemBadge: {
     position: 'absolute',

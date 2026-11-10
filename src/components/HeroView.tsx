@@ -63,17 +63,12 @@ export const HeroView: React.FC<Props> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#18181B',
+    backgroundColor: 'rgba(26, 32, 44, 0.9)',
     borderRadius: 12,
     padding: 8,
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.12)',
+    borderColor: '#4A5568',
     minWidth: 170,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
   },
   turnActive: {
     borderColor: '#ECC94B',

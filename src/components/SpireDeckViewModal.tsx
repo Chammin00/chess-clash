@@ -53,7 +53,7 @@ export const SpireDeckViewModal: React.FC<Props> = ({ visible, deck, onClose }) 
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.70)',
+    backgroundColor: 'rgba(0,0,0,0.85)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
@@ -61,16 +61,11 @@ const styles = StyleSheet.create({
   modalCard: {
     width: '100%',
     maxHeight: '90%',
-    backgroundColor: '#18181B',
+    backgroundColor: '#1E293B',
     borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: 'rgba(56, 189, 248, 0.4)',
+    borderWidth: 2,
+    borderColor: '#38BDF8',
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 20,
-    elevation: 8,
   },
   header: {
     flexDirection: 'row',
@@ -79,7 +74,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#27272A',
+    borderBottomColor: '#334155',
   },
   title: {
     color: '#F8FAFC',
@@ -112,15 +107,10 @@ const styles = StyleSheet.create({
   },
   doneBtn: {
     backgroundColor: '#2563EB',
-    borderRadius: 10,
+    borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
     marginTop: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    elevation: 3,
   },
   doneText: {
     color: '#FFF',
