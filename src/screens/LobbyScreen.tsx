@@ -36,6 +36,7 @@ interface Props {
   onOpenShop: () => void;
   onOpenBattlePass: () => void;
   onOpenGwent: () => void;
+  onOpenTurboType: () => void;
 }
 
 const WARRIOR_PORTRAIT_MAP: Record<WarriorArchetypeId, string> = {
@@ -58,6 +59,7 @@ export const LobbyScreen: React.FC<Props> = ({
   onOpenShop,
   onOpenBattlePass,
   onOpenGwent,
+  onOpenTurboType,
 }) => {
   const [previewMotion, setPreviewMotion] = useState<MotionActionType>('idle');
   const [activeMotionLabel, setActiveMotionLabel] = useState<string>(
@@ -112,6 +114,9 @@ export const LobbyScreen: React.FC<Props> = ({
           </TouchableOpacity>
           <TouchableOpacity style={[styles.navTab, { borderColor: '#F59E0B' }]} onPress={onOpenGwent}>
             <Text style={[styles.navTabText, { color: '#FCD34D' }]}>GWENT</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.navTab, { borderColor: '#22C55E' }]} onPress={onOpenTurboType}>
+            <Text style={[styles.navTabText, { color: '#86EFAC' }]}>🏎️ TURBO TYPE</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.navTab} onPress={onOpenLeaderboard}>
             <Text style={styles.navTabText}>RANKS</Text>

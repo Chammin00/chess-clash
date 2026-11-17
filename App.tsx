@@ -26,6 +26,7 @@ import { SpireEventScreen } from './src/screens/SpireEventScreen';
 import { SpireRunOverModal } from './src/screens/SpireRunOverModal';
 import { SpireDeckViewModal } from './src/components/SpireDeckViewModal';
 import { GwentScreen } from './src/screens/GwentScreen';
+import { TurboTypeScreen } from './src/screens/TurboTypeScreen';
 
 // Types & Services
 import { PlayerProfile } from './src/types/mmr';
@@ -67,7 +68,8 @@ type CurrentScreen =
   | 'spire_rest'
   | 'spire_shop'
   | 'spire_event'
-  | 'gwent';
+  | 'gwent'
+  | 'turbo_type';
 
 export default function App() {
   const [profile, setProfile] = useState<PlayerProfile | null>(null);
@@ -578,6 +580,7 @@ export default function App() {
           onOpenShop={() => setScreen('shop')}
           onOpenBattlePass={() => setScreen('battlepass')}
           onOpenGwent={() => setScreen('gwent')}
+          onOpenTurboType={() => setScreen('turbo_type')}
         />
       )}
 
@@ -735,6 +738,22 @@ export default function App() {
                 mmr: profile.mmr + delta,
                 gold: profile.gold + (won ? 150 : 35),
                 gems: profile.gems + (won ? 15 : 0),
+              };
+              setProfile(updated);
+              StorageService.saveProfile(updated);
+            }
+          }}
+        />
+      )}
+
+      {screen === 'turbo_type' && (
+        <TurboTypeScreen
+          onBack={() => setScreen('lobby')}
+          onRunComplete={(wordsTyped) => {
+            if (profile && wordsTyped > 0) {
+              const updated = {
+                ...profile,
+                gold: profile.gold + wordsTyped * 5,
               };
               setProfile(updated);
               StorageService.saveProfile(updated);
